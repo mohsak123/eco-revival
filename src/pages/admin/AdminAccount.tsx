@@ -1,5 +1,3 @@
-import React from 'react';
-
 const AdminAccount = () => {
   return (
     <div id="accountPage" className="page-content">
