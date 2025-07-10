@@ -3,7 +3,7 @@ import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
 
-const Layout = () => {
+const Layout = ({ role }: { role: "user" | "admin" }) => {
   return (
     <div className="bg-gray-50 min-h-screen flex flex-col">
       {/* Header */}
@@ -21,7 +21,7 @@ const Layout = () => {
                 <div className="p-6">
                   <h1 className="text-2xl font-bold text-[#6b7280] mb-2">🌱 Eco-Revival</h1>
                   <hr className="mb-4" />
-                  <SidebarContent />
+                  <SidebarContent role={role} />
                 </div>
               </SheetContent>
             </Sheet>
@@ -53,7 +53,7 @@ const Layout = () => {
       <div className="flex flex-1">
         {/* Sidebar (visible only on md and above) */}
         <aside className="hidden md:block w-64 bg-white shadow-lg h-auto sticky top-0">
-          <SidebarContent />
+          <SidebarContent role={role} />
         </aside>
 
         {/* Main content */}
@@ -67,34 +67,51 @@ const Layout = () => {
 
 export default Layout;
 
-/** Sidebar extracted as component for reusability (desktop + mobile) */
-const SidebarContent = () => (
-  <nav className="md:p-6 space-y-2">
-    {[
-      { label: "Add", icon: AddIcon, path:"/add" },
-      { label: "Home", icon: HomeIcon, path:"/" },
-      { label: "My Orders", icon: OrdersIcon, path:"/orders" },
-      { label: "Factories", icon: FactoriesIcon, path:"/factories" },
-      { label: "My Profile", icon: ProfileIcon, path:"/profile" },
-      { label: "Help", icon: HelpIcon, path:"/help" },
-    ].map(({ label, icon: Icon, path }) => (
-      <Link to={path}
-        key={label}
-        className="w-full cursor-pointer flex items-center space-x-3 px-4 py-3 text-left text-[#6b7280] hover:bg-[#86efac] hover:text-white rounded-lg transition duration-200"
-      >
-        <Icon />
-        <span>{label}</span>
-      </Link>
-    ))}
+const SidebarContent = ({ role }: { role: "user" | "admin" }) => {
 
-    <div className="mt-6">
-      <button className="w-full flex items-center cursor-pointer space-x-3 px-4 py-3 text-left text-red-600 hover:bg-red-50 rounded-lg transition duration-200">
-        <span>🚪</span>
-        <span>Logout</span>
-      </button>
-    </div>
-  </nav>
-);
+  const userLinks = [
+    { label: "Add", icon: AddIcon, path: "/add" },
+    { label: "Home", icon: HomeIcon, path: "/" },
+    { label: "My Orders", icon: OrdersIcon, path: "/orders" },
+    { label: "Factories", icon: FactoriesIcon, path: "/factories" },
+    { label: "My Profile", icon: ProfileIcon, path: "/profile" },
+    { label: "Help", icon: HelpIcon, path: "/help" },
+  ];
+
+  const adminLinks = [
+    { label: "Home", icon: HomeIcon, path: "/dashboard" },
+    { label: "Products", icon: ProfileIcon, path: "/dashboard/products" },
+    { label: "My Orders", icon: OrdersIcon, path: "/dashboard/orders" },
+    { label: "Delegates", icon: FactoriesIcon, path: "/dashboard/delegates" },
+    { label: "Help & Support", icon: HelpIcon, path: "/dashboard/help" },
+    { label: "My Account", icon: HelpIcon, path: "/dashboard/account" },
+  ];
+
+  const links = role === "admin" ? adminLinks : userLinks;
+
+  return (
+    <nav className="md:p-6 space-y-2">
+      {links.map(({ label, icon: Icon, path }) => (
+        <Link
+          to={path}
+          key={label}
+          className="w-full cursor-pointer flex items-center space-x-3 px-4 py-3 text-left text-[#6b7280] hover:bg-[#86efac] hover:text-white rounded-lg transition duration-200"
+        >
+          <Icon />
+          <span>{label}</span>
+        </Link>
+      ))}
+
+      <div className="mt-6">
+        <button className="w-full flex items-center cursor-pointer space-x-3 px-4 py-3 text-left text-red-600 hover:bg-red-50 rounded-lg transition duration-200">
+          <span>🚪</span>
+          <span>Logout</span>
+        </button>
+      </div>
+    </nav>
+  );
+};
+
 
 /** Simple icons as components to avoid repeating SVG code */
 const AddIcon = () => (
