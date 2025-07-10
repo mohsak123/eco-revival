@@ -20,7 +20,7 @@ import { Toaster } from "react-hot-toast";
 import PrivateRoutes from './utils/privateRoutes';
 
 const NotFound = () => (
-  <div className='text-3xl text-red-500'>404 - Page Not Found</div>
+  <div className='text-3xl text-red-500 flex items-center justify-center h-screen'>404 - Page Not Found</div>
 );
 
 const App = () => {
@@ -35,7 +35,6 @@ const App = () => {
       <Router>
         <Routes>
           <Route element={<Layout role={role} />}>
-            {/* 🧍‍♂️ User Pages */}
             <Route
               element={
                 <PrivateRoutes
