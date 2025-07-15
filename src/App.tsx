@@ -17,6 +17,8 @@ import AdminHelp from './pages/admin/AdminHelp';
 import AdminAccount from './pages/admin/AdminAccount';
 import { Toaster } from "react-hot-toast";
 import PrivateRoutes from './utils/privateRoutes';
+import SingleFactory from './pages/SingleFactory';
+import PlaceOrder from './pages/PlaceOrder';
 
 const NotFound = () => (
   <div className='text-3xl text-red-500 flex items-center justify-center h-screen'>404 - Page Not Found</div>
@@ -24,7 +26,7 @@ const NotFound = () => (
 
 const App = () => {
   const [user, setUser] = useState(true);
-  const [role, setRole] = useState<"user" | "admin">("admin");
+  const [role, setRole] = useState<"user" | "admin">("user");
 
   const isAuthenticated = user;
 
@@ -49,6 +51,9 @@ const App = () => {
               <Route path="/factories" element={<Factories />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/help" element={<Help />} />
+
+              <Route path="/factories/factory" element={<SingleFactory />} />
+              <Route path="/factories/factory/order" element={<PlaceOrder />} />
             </Route>
 
             <Route

@@ -1,27 +1,40 @@
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { registerUser } from '@/store/authSlice';
 
 const Register = () => {
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [location, setLocation] = useState('');
-  const [company, setCompany] = useState('no');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  // const dispatch = useAppDispatch();
+  // const { loading, error } = useAppSelector(state => state.auth);
+
+  const [formData, setFormData] = useState({
+    username: '',
+    fullname: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    state: '',
+    password: '',
+    confirmPassword: '',
+  });
 
   const validateForm = () => {
-    if (!fullName.trim()) return "Full Name is required.";
-    if (!email.trim()) return "Email is required.";
+    if (!formData.username.trim()) return 'Username is required.';
+    if (!formData.fullname.trim()) return 'Full Name is required.';
+    if (!formData.email.trim()) return 'Email is required.';
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) return "Invalid email address.";
-    if (!phone.trim()) return "Phone Number is required.";
-    if (!location.trim()) return "Location is required.";
-    if (!password) return "Password is required.";
-    if (password.length < 6) return "Password must be at least 6 characters.";
-    if (password !== confirmPassword) return "Passwords do not match.";
+    if (!emailRegex.test(formData.email)) return 'Invalid email address.';
+    if (!formData.phone.trim()) return 'Phone Number is required.';
+    if (!formData.password) return 'Password is required.';
+    if (formData.password.length < 6) return 'Password must be at least 6 characters.';
+    if (formData.password !== formData.confirmPassword) return 'Passwords do not match.';
     return null;
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -31,7 +44,10 @@ const Register = () => {
       toast.error(validationError);
       return;
     }
-    toast.success('Registration successful!');
+    // dispatch(registerUser(formData))
+    //   .unwrap()
+    //   .then(() => toast.success('Registration successful!'))
+    //   .catch(msg => toast.error(msg));
   };
 
   return (
@@ -42,97 +58,97 @@ const Register = () => {
           <p className="text-eco-gray">Create your account</p>
         </div>
         <form id="signupForm" onSubmit={handleSubmit} className="space-y-4" noValidate>
-          <div>
-            <label className="block text-eco-gray font-medium mb-2">Full Name</label>
-            <input
-              type="text"
-              id="signupName"
-              value={fullName}
-              onChange={e => setFullName(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#86efac] focus:border-transparent"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-eco-gray font-medium mb-2">Email</label>
-            <input
-              type="email"
-              id="signupEmail"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#86efac] focus:border-transparent"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-eco-gray font-medium mb-2">Phone Number</label>
-            <input
-              type="tel"
-              id="signupPhone"
-              value={phone}
-              onChange={e => setPhone(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#86efac] focus:border-transparent"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-eco-gray font-medium mb-2">Location</label>
-            <input
-              type="text"
-              id="signupLocation"
-              value={location}
-              onChange={e => setLocation(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#86efac] focus:border-transparent"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-eco-gray font-medium mb-2">Are you a company?</label>
-            <select
-              id="signupCompany"
-              value={company}
-              onChange={e => setCompany(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#86efac] focus:border-transparent"
-            >
-              <option value="no">No</option>
-              <option value="yes">Yes</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-eco-gray font-medium mb-2">Password</label>
-            <input
-              type="password"
-              id="signupPassword"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#86efac] focus:border-transparent"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-eco-gray font-medium mb-2">Confirm Password</label>
-            <input
-              type="password"
-              id="signupConfirmPassword"
-              value={confirmPassword}
-              onChange={e => setConfirmPassword(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#86efac] focus:border-transparent"
-              required
-            />
-          </div>
+          <input
+            name="username"
+            type="text"
+            placeholder="Username"
+            value={formData.username}
+            onChange={handleChange}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+            required
+          />
+          <input
+            name="fullname"
+            type="text"
+            placeholder="Full Name"
+            value={formData.fullname}
+            onChange={handleChange}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+            required
+          />
+          <input
+            name="email"
+            type="email"
+            placeholder="Email"
+            value={formData.email}
+            onChange={handleChange}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+            required
+          />
+          <input
+            name="phone"
+            type="tel"
+            placeholder="Phone Number"
+            value={formData.phone}
+            onChange={handleChange}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+            required
+          />
+          <input
+            name="address"
+            type="text"
+            placeholder="Address"
+            value={formData.address}
+            onChange={handleChange}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+          />
+          <input
+            name="city"
+            type="text"
+            placeholder="City"
+            value={formData.city}
+            onChange={handleChange}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+          />
+          <input
+            name="state"
+            type="text"
+            placeholder="State"
+            value={formData.state}
+            onChange={handleChange}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+          />
+          <input
+            name="password"
+            type="password"
+            placeholder="Password"
+            value={formData.password}
+            onChange={handleChange}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+            required
+          />
+          <input
+            name="confirmPassword"
+            type="password"
+            placeholder="Confirm Password"
+            value={formData.confirmPassword}
+            onChange={handleChange}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+            required
+          />
           <button
             type="submit"
-            className="w-full cursor-pointer bg-[#86efac] hover:bg-[#4ade80] text-white font-semibold py-3 rounded-lg transition duration-200"
+            // disabled={loading}
+            className="w-full bg-[#86efac] hover:bg-[#4ade80] text-white font-semibold py-3 rounded-lg"
           >
+            {/* {loading ? 'Registering...' : 'Sign Up'} */}
             Sign Up
           </button>
+          {/* {error && <p className="text-red-600 mt-2">{error}</p>} */}
         </form>
         <p className="text-center mt-6 text-eco-gray">
           Already have an account?{' '}
-          <Link to="/login"
-            onClick={() => { /* add login navigation */ }}
-            className="text-[#4ade80] hover:underline font-medium cursor-pointer"
-          >
+          <Link to="/login" className="text-[#4ade80] hover:underline font-medium cursor-pointer">
             Login
           </Link>
         </p>
