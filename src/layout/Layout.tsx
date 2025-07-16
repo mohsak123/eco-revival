@@ -2,6 +2,10 @@ import { Link, Outlet } from "react-router-dom";
 import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
+import { FiFileText } from "react-icons/fi";
+import { HiOutlineUserGroup } from "react-icons/hi2";
+import { BsPerson } from "react-icons/bs";
+
 
 const Layout = ({ role }: { role: "user" | "admin" }) => {
   return (
@@ -80,11 +84,11 @@ const SidebarContent = ({ role }: { role: "user" | "admin" }) => {
 
   const adminLinks = [
     { label: "Home", icon: HomeIcon, path: "/dashboard" },
-    { label: "Products", icon: ProfileIcon, path: "/dashboard/products" },
-    { label: "My Orders", icon: OrdersIcon, path: "/dashboard/orders" },
-    { label: "Delegates", icon: FactoriesIcon, path: "/dashboard/delegates" },
+    { label: "Products", icon: OrdersIcon, path: "/dashboard/products" },
+    { label: "My Orders", icon: FiFileText, path: "/dashboard/orders" },
+    { label: "Delegates", icon: HiOutlineUserGroup, path: "/dashboard/delegates" },
     { label: "Help & Support", icon: HelpIcon, path: "/dashboard/help" },
-    { label: "My Account", icon: HelpIcon, path: "/dashboard/account" },
+    { label: "My Account", icon: BsPerson, path: "/dashboard/account" },
   ];
 
   const links = role === "admin" ? adminLinks : userLinks;

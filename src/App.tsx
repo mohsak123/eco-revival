@@ -26,7 +26,7 @@ const NotFound = () => (
 
 const App = () => {
   const [user, setUser] = useState(true);
-  const [role, setRole] = useState<"user" | "admin">("user");
+  const [role, setRole] = useState<"user" | "admin">("admin");
 
   const isAuthenticated = user;
 

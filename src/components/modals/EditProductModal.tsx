@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,21 +8,25 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
-interface ProductModalProps {
+interface EditProductModalProps {
   open: boolean;
   onOpenChange: (value: boolean) => void;
-  onAdd: (product: {
+  product: {
     id: string;
     name: string;
     price: string;
     unit: string;
-    image: File | null;
-    emoji: string;
-    bg: string;
-  }) => void;
+    image?: File | null;
+  } | null;
+  onSave: (updatedProduct: any) => void;
 }
 
-const ProductModal = ({ open, onOpenChange, onAdd }: ProductModalProps) => {
+const EditProductModal = ({
+  open,
+  onOpenChange,
+  product,
+  onSave,
+}: EditProductModalProps) => {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [unit, setUnit] = useState("kg");
@@ -34,15 +38,20 @@ const ProductModal = ({ open, onOpenChange, onAdd }: ProductModalProps) => {
     image: "",
   });
 
+  useEffect(() => {
+    if (product) {
+      setName(product.name || "");
+      setPrice(product.price.replace(/[^\d.]/g, "") || "");
+      setUnit(product.unit || "kg");
+      setImage(product.image || null);
+    }
+  }, [product]);
+
   const validate = () => {
     const newErrors = {
       name: name.trim() === "" ? "Product name is required." : "",
       price: price === "" || parseFloat(price) <= 0 ? "Price must be greater than 0." : "",
-      image: !image
-        ? "Product image is required."
-        : !image.type.startsWith("image/")
-        ? "Only image files are allowed."
-        : "",
+      image: image && !image.type.startsWith("image/") ? "Only image files are allowed." : "",
     };
     setErrors(newErrors);
     return !newErrors.name && !newErrors.price && !newErrors.image;
@@ -51,24 +60,15 @@ const ProductModal = ({ open, onOpenChange, onAdd }: ProductModalProps) => {
   const handleSubmit = () => {
     if (!validate()) return;
 
-    const newProduct = {
-      id: Date.now().toString(),
+    const updatedProduct = {
+      ...product,
       name,
       price,
       unit,
       image,
-      emoji: "📦", // يمكنك تغييره لاحقاً أو توليده تلقائياً
-      bg: "from-gray-200 to-gray-400", // يمكنك توليد ألوان عشوائية إذا بدك
     };
 
-    onAdd(newProduct);
-
-    // reset & close modal
-    setName("");
-    setPrice("");
-    setUnit("kg");
-    setImage(null);
-    setErrors({ name: "", price: "", image: "" });
+    onSave(updatedProduct);
     onOpenChange(false);
   };
 
@@ -77,7 +77,7 @@ const ProductModal = ({ open, onOpenChange, onAdd }: ProductModalProps) => {
       <DialogContent className="bg-white rounded-lg p-8 w-full max-w-md">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-gray-800 mb-4">
-            Add New Product
+            Edit Product
           </DialogTitle>
         </DialogHeader>
         <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
@@ -144,14 +144,14 @@ const ProductModal = ({ open, onOpenChange, onAdd }: ProductModalProps) => {
             <Button
               type="button"
               onClick={handleSubmit}
-              className="flex-1 bg-[#4ade80] hover:bg-[#16a34a] text-white cursor-pointer"
+              className="flex-1 bg-[#4ade80] hover:bg-[#16a34a] text-white"
             >
-              Add
+              Save
             </Button>
             <Button
               type="button"
               variant="secondary"
-              className="flex-1 bg-gray-500 hover:bg-gray-600 text-white cursor-pointer"
+              className="flex-1 bg-gray-500 hover:bg-gray-600 text-white"
               onClick={() => onOpenChange(false)}
             >
               Cancel
@@ -163,4 +163,4 @@ const ProductModal = ({ open, onOpenChange, onAdd }: ProductModalProps) => {
   );
 };
 
-export default ProductModal;
+export default EditProductModal;
