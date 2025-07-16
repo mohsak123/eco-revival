@@ -53,7 +53,7 @@ const PlaceOrder = () => {
     <div id="orderForm" className="fade-in">
       <button
         onClick={() => window.history.back()}
-        className="mb-4 text-eco-green-dark hover:underline"
+        className="mb-4 text-[#4ade80] cursor-pointer hover:underline"
       >
         ← Back to Factory
       </button>
