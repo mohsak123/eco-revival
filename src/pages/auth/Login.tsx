@@ -64,7 +64,10 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#86efac] to-white">
       <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md fade-in">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-eco-gray mb-2">🌱 Eco-Revival</h1>
+          <h1 className="text-3xl font-bold text-eco-gray mb-2 flex items-center justify-center gap-1">
+            <img src="/images/logo.jpg" alt="" className="w-[70px] h-[70px] object-cover" /> 
+            Eco-Revival
+          </h1>
           <p className="text-eco-gray">Sustainable Recycling Platform</p>
         </div>
         <form id="loginForm" onSubmit={handleSubmit} className="space-y-6" noValidate>

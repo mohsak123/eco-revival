@@ -54,7 +54,10 @@ const Register = () => {
     <div id="signupPage" className="py-8 min-h-screen flex items-center justify-center bg-gradient-to-br from-[#86efac] to-white">
       <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md fade-in">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-eco-gray mb-2">🌱 Join Eco-Revival</h1>
+          <h1 className="text-3xl font-bold text-eco-gray mb-2 flex items-center justify-center gap-1">
+            <img src="/images/logo.jpg" alt="" className="w-[70px] h-[70px] object-cover" /> 
+            Join Eco-Revival
+          </h1>
           <p className="text-eco-gray">Create your account</p>
         </div>
         <form id="signupForm" onSubmit={handleSubmit} className="space-y-4" noValidate>
