@@ -1,28 +1,25 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { loginUser } from "@/store/authSlice";
+import type { AppDispatch } from "@/store/store";
+
 
 const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isCompany, setIsCompany] = useState(false); // حالة الـ checkbox
+  const [isCompany, setIsCompany] = useState(false);
   const navigate = useNavigate();
 
-  const validateEmail = (email: string) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  };
+  const dispatch = useDispatch<AppDispatch>();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async(e: React.FormEvent) => {
     e.preventDefault();
 
     if (username.trim() === "") {
-      toast.error("Please enter your email.");
-      return;
-    }
-
-    if (!validateEmail(username.trim())) {
-      toast.error("Please enter a valid email address.");
+      toast.error("Please enter a username");
       return;
     }
 
@@ -36,10 +33,28 @@ const Login = () => {
       return;
     }
 
-    console.log("Is Company:", isCompany);
-
     setLoading(true);
 
+    const resultAction = await dispatch(
+    loginUser({
+      username: username.trim(),
+      password: password.trim(),
+      })
+    );
+
+    if (loginUser.fulfilled.match(resultAction)) {
+      toast.success("Welcome back!");
+
+      // if (isCompany) {
+      //   navigate("/dashboard");
+      // } else {
+      //   navigate("/");
+      // }
+    } else {
+      toast.error(resultAction.payload || "Login failed");
+    }
+
+    
     setTimeout(() => {
       toast.success(`Welcome back!`);
       localStorage.setItem("user", "true");
@@ -58,6 +73,10 @@ const Login = () => {
 
     },1500)
 
+    console.log(resultAction)
+
+    setLoading(false);
+
   };
 
   return (
@@ -74,11 +93,11 @@ const Login = () => {
           <div>
             <label className="block text-eco-gray font-medium mb-2">Email</label>
             <input
-              type="email"
+              type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#86efac] focus:border-transparent"
-              placeholder="you@example.com"
+              placeholder="user name"
               disabled={loading}
             />
           </div>

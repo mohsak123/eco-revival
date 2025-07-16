@@ -19,7 +19,7 @@ interface AuthState {
 }
 
 interface LoginPayload {
-  email: string;
+  username: string;
   password: string;
 }
 
@@ -42,7 +42,8 @@ export const loginUser = createAsyncThunk<
   { rejectValue: string }
 >('auth/loginUser', async (data, thunkAPI) => {
   try {
-    const response = await axios.post(`${BASE_URL}/login`, data);
+    console.log(BASE_URL)
+    const response = await axios.post(`${BASE_URL}/houdix/eco/auth/user/login`, data);
     return response.data;
   } catch (err: any) {
     return thunkAPI.rejectWithValue(err.response?.data?.message || 'Login failed');
@@ -110,7 +111,8 @@ const authSlice = createSlice({
         state.loading = false;
         state.user = action.payload.user;
         state.token = action.payload.token;
-        localStorage.setItem('token', action.payload.token);
+        // localStorage.setItem('token', action.payload.token);
+        // localStorage.setItem('user', JSON.stringify(action.payload.user));
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
@@ -127,6 +129,7 @@ const authSlice = createSlice({
         state.user = action.payload.user;
         state.token = action.payload.token;
         localStorage.setItem('token', action.payload.token);
+        localStorage.setItem('user', JSON.stringify(action.payload.user));
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.loading = false;

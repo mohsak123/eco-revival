@@ -28,10 +28,9 @@ const App = () => {
   const [user, setUser] = useState(localStorage.getItem("user") === "true" ? true : false);
   const [role, setRole] = useState<"user" | "admin">(localStorage.getItem("role") === "admin" ? "admin" : "user");
 
-  console.log(user);
-  console.log(role)
-
   const isAuthenticated = user;
+
+  // setUser(true)
 
   return (
     <>
