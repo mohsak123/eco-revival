@@ -6,6 +6,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import DynamicMap from "@/components/DynamicMap"; // تأكد أنك مستدعيه من المسار الصحيح
 
 type Material = {
   id: string;
@@ -44,10 +45,12 @@ const EditOrderDialog: React.FC<EditOrderDialogProps> = ({
 }) => {
   const [selectedMaterials, setSelectedMaterials] = useState<{ [key: string]: boolean }>({});
   const [quantities, setQuantities] = useState<{ [key: string]: number }>({});
-  const [location, setLocation] = useState("");
+  const [address, setAddress] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [estimatedPrice, setEstimatedPrice] = useState(0);
+  const [position, setPosition] = useState({ lat: 35.52, lng: 35.8 });
+  const [isEditable, setIsEditable] = useState(false);
 
   useEffect(() => {
     if (initialOrder) {
@@ -63,7 +66,7 @@ const EditOrderDialog: React.FC<EditOrderDialogProps> = ({
 
       setSelectedMaterials(selected);
       setQuantities(qty);
-      setLocation(initialOrder.location || "");
+      setAddress(initialOrder.location || "");
       setDate(initialOrder.date || "");
       setTime(initialOrder.time || "");
     }
@@ -108,7 +111,7 @@ const EditOrderDialog: React.FC<EditOrderDialogProps> = ({
       materials: selectedMatLabels.join(", "),
       quantity: qtyArray.join(", "),
       price,
-      location,
+      location: address,
       date,
       time,
     };
@@ -119,7 +122,7 @@ const EditOrderDialog: React.FC<EditOrderDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg h-[85vh] overflow-auto">
         <DialogHeader>
           <DialogTitle>Edit Order #{initialOrder?.id}</DialogTitle>
         </DialogHeader>
@@ -170,13 +173,41 @@ const EditOrderDialog: React.FC<EditOrderDialogProps> = ({
 
           {/* الموقع */}
           <div>
-            <label className="block font-medium mb-1">Location</label>
+            <div className="flex justify-between items-center mb-1">
+              <label className="block font-medium">Location on Map</label>
+              <button
+                type="button"
+                onClick={() => setIsEditable((prev) => !prev)}
+                className={`text-sm font-medium px-3 py-1 rounded ${
+                  isEditable
+                    ? "bg-green-500 text-white hover:bg-green-600"
+                    : "bg-blue-500 text-white hover:bg-blue-600"
+                }`}
+              >
+                {isEditable ? "Confirm" : "Edit"}
+              </button>
+            </div>
+
+            {/* العنوان */}
             <input
               type="text"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              required
-              className="w-full border px-3 py-2 rounded"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              className="w-full border px-3 py-2 rounded mb-3"
+              disabled={!isEditable}
+            />
+
+            {/* الخريطة */}
+            <DynamicMap
+              address={address}
+              initialPosition={position}
+              onPositionChange={(pos) => {
+                if (isEditable) setPosition(pos);
+              }}
+              onAddressChange={(addr) => {
+                if (isEditable) setAddress(addr);
+              }}
+              isEditable={isEditable}
             />
           </div>
 
