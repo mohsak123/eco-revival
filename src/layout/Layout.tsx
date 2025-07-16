@@ -93,6 +93,12 @@ const SidebarContent = ({ role }: { role: "user" | "admin" }) => {
 
   const links = role === "admin" ? adminLinks : userLinks;
 
+  const handleLogout = () =>{
+    localStorage.clear();
+    location.reload();
+
+  }
+
   return (
     <nav className="md:p-6 space-y-2">
       {links.map(({ label, icon: Icon, path }) => (
@@ -107,7 +113,7 @@ const SidebarContent = ({ role }: { role: "user" | "admin" }) => {
       ))}
 
       <div className="mt-6">
-        <button className="w-full flex items-center cursor-pointer space-x-3 px-4 py-3 text-left text-red-600 hover:bg-red-50 rounded-lg transition duration-200">
+        <button onClick={handleLogout} className="w-full flex items-center cursor-pointer space-x-3 px-4 py-3 text-left text-red-600 hover:bg-red-50 rounded-lg transition duration-200">
           <span>🚪</span>
           <span>Logout</span>
         </button>

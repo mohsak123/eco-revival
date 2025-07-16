@@ -51,7 +51,7 @@ const AdminHelp = () => {
           </div>
         </div>
 
-        <div className="border-t pt-6">
+        {/* <div className="border-t pt-6">
           <div className="flex items-center">
             <span className="text-gray-600 mr-3">Powered by</span>
             <div className="flex items-center bg-gray-100 px-4 py-2 rounded-lg">
@@ -61,7 +61,7 @@ const AdminHelp = () => {
               <span className="font-bold text-gray-800">HoudiX</span>
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
 
       <div className="mt-8 text-center">
