@@ -1,7 +1,7 @@
 import DeleteConfirmDialog from "@/components/modals/DeleteConfirmDialog";
-import EditDialog from "@/components/modals/EditDialog";
+import EditOrderDialog from "@/components/modals/EditOrderDialog";
+import EditDialog from "@/components/modals/EditDialog"; // popup التعديل على commit فقط
 import { useState } from "react";
-
 
 const ordersData = [
   {
@@ -42,16 +42,15 @@ const ordersData = [
 const Orders = () => {
   const [orders, setOrders] = useState(ordersData);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editOrderDialogOpen, setEditOrderDialogOpen] = useState(false);
+  const [editCommitDialogOpen, setEditCommitDialogOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
 
-  // فتح بوباب الحذف
   const openDeleteDialog = (orderId: number) => {
     setSelectedOrderId(orderId);
     setDeleteDialogOpen(true);
   };
 
-  // تأكيد الحذف
   const confirmDelete = () => {
     if (selectedOrderId !== null) {
       setOrders((prev) => prev.filter((order) => order.id !== selectedOrderId));
@@ -60,28 +59,43 @@ const Orders = () => {
     }
   };
 
-  // فتح بوباب التعديل
+  // فتح popup التعديل المناسب حسب حالة الطلب
   const openEditDialog = (orderId: number) => {
     setSelectedOrderId(orderId);
-    setEditDialogOpen(true);
+    const order = orders.find((o) => o.id === orderId);
+    if (!order) return;
+
+    if (order.status.label === "Pending") {
+      setEditOrderDialogOpen(true);  // تعديل كامل
+    } else if (order.status.label === "In Progress") {
+      setEditCommitDialogOpen(true); // تعديل commit فقط
+    }
   };
 
-  // حفظ التعديل
-  const saveEditCommit = (newCommit: string) => {
+  // حفظ تعديل الطلب الكامل
+  const saveEditedOrder = (updatedOrder: any) => {
+    setOrders((prev) =>
+      prev.map((order) => (order.id === updatedOrder.id ? updatedOrder : order))
+    );
+    setEditOrderDialogOpen(false);
+    setSelectedOrderId(null);
+  };
+
+  // حفظ تعديل commit فقط
+  const saveEditedCommit = (newCommit: string) => {
     if (selectedOrderId !== null) {
       setOrders((prev) =>
         prev.map((order) =>
           order.id === selectedOrderId ? { ...order, commit: newCommit } : order
         )
       );
-      setEditDialogOpen(false);
+      setEditCommitDialogOpen(false);
       setSelectedOrderId(null);
     }
   };
 
-  // الحصول على بيانات الطلب المحدد
   const selectedOrder = selectedOrderId !== null
-    ? orders.find((o) => o.id === selectedOrderId)
+    ? orders.find((o) => o.id === selectedOrderId) || null
     : null;
 
   return (
@@ -124,7 +138,6 @@ const Orders = () => {
             </div>
 
             <div className="flex space-x-4">
-              {/* حالة Completed - زر حذف */}
               {order.status.label === "Completed" && order.deletable && (
                 <button
                   className="text-red-600 hover:text-red-800 text-sm"
@@ -134,18 +147,7 @@ const Orders = () => {
                 </button>
               )}
 
-              {/* حالة In Progress - زر تعديل */}
-              {order.status.label === "In Progress" && (
-                <button
-                  className="text-blue-600 hover:text-blue-800 text-sm"
-                  onClick={() => openEditDialog(order.id)}
-                >
-                  Edit
-                </button>
-              )}
-
-              {/* حالة Pending - زرين Edit و Cancel */}
-              {order.status.label === "Pending" && (
+              {["In Progress", "Pending"].includes(order.status.label) && (
                 <>
                   <button
                     className="text-blue-600 hover:text-blue-800 text-sm"
@@ -153,12 +155,15 @@ const Orders = () => {
                   >
                     Edit
                   </button>
-                  <button
-                    className="text-red-600 hover:text-red-800 text-sm"
-                    onClick={() => openDeleteDialog(order.id)}
-                  >
-                    Cancel
-                  </button>
+
+                  {order.status.label === "Pending" && (
+                    <button
+                      className="text-red-600 hover:text-red-800 text-sm"
+                      onClick={() => openDeleteDialog(order.id)}
+                    >
+                      Cancel
+                    </button>
+                  )}
                 </>
               )}
             </div>
@@ -173,11 +178,20 @@ const Orders = () => {
         productName={selectedOrder?.company || ""}
       />
 
+      {/* popup التعديل الكامل للطلب */}
+      <EditOrderDialog
+        open={editOrderDialogOpen}
+        onOpenChange={setEditOrderDialogOpen}
+        initialOrder={selectedOrder}
+        onSave={saveEditedOrder}
+      />
+
+      {/* popup تعديل الـ commit فقط */}
       <EditDialog
-        open={editDialogOpen}
-        onClose={() => setEditDialogOpen(false)}
+        open={editCommitDialogOpen}
+        onClose={() => setEditCommitDialogOpen(false)}
         initialCommit={selectedOrder?.commit}
-        onSave={saveEditCommit}
+        onSave={saveEditedCommit}
       />
     </div>
   );

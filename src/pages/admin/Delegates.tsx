@@ -1,10 +1,15 @@
 import { useState } from "react";
 import DelegateModal from "@/components/modals/DelegateModal";
+import EditDelegateDialog from "@/components/modals/EditDelegateDialog";
+import DeleteConfirmDialog from "@/components/modals/DeleteConfirmDialog";
 
 const Delegates = () => {
   const [modalOpen, setModalOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedDelegateId, setSelectedDelegateId] = useState<string | null>(null);
 
-  const delegates = [
+  const [delegates, setDelegates] = useState([
     {
       id: "john",
       name: "John Smith",
@@ -25,15 +30,34 @@ const Delegates = () => {
       bg: "bg-blue-200",
       text: "text-blue-700",
     },
-  ];
+  ]);
 
-  const editDelegate = (id: string) => {
-    console.log("Edit delegate", id);
+  const openEditDialog = (id: string) => {
+    setSelectedDelegateId(id);
+    setEditDialogOpen(true);
   };
 
-  const deleteDelegate = (id: string) => {
-    console.log("Delete delegate", id);
+  const saveDelegate = (updatedDelegate: typeof delegates[0]) => {
+    setDelegates((prev) =>
+      prev.map((d) => (d.id === updatedDelegate.id ? updatedDelegate : d))
+    );
+    setEditDialogOpen(false);
+    setSelectedDelegateId(null);
   };
+
+  const openDeleteDialog = (id: string) => {
+    setSelectedDelegateId(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (!selectedDelegateId) return;
+    setDelegates((prev) => prev.filter((d) => d.id !== selectedDelegateId));
+    setSelectedDelegateId(null);
+    setDeleteDialogOpen(false);
+  };
+
+  const selectedDelegate = delegates.find((d) => d.id === selectedDelegateId) || null;
 
   return (
     <div id="delegatesPage" className="page-content">
@@ -59,9 +83,7 @@ const Delegates = () => {
                 </span>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-800">
-                  {delegate.name}
-                </h3>
+                <h3 className="text-lg font-semibold text-gray-800">{delegate.name}</h3>
                 <p className="text-sm text-gray-600">{delegate.status}</p>
               </div>
             </div>
@@ -77,13 +99,13 @@ const Delegates = () => {
 
             <div className="flex space-x-2">
               <button
-                onClick={() => editDelegate(delegate.id)}
+                onClick={() => openEditDialog(delegate.id)}
                 className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded transition-colors cursor-pointer"
               >
                 Edit
               </button>
               <button
-                onClick={() => deleteDelegate(delegate.id)}
+                onClick={() => openDeleteDialog(delegate.id)}
                 className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded transition-colors cursor-pointer"
               >
                 Delete
@@ -93,8 +115,24 @@ const Delegates = () => {
         ))}
       </div>
 
+      {/* Modal إضافة مندوب جديد */}
       <DelegateModal open={modalOpen} onClose={() => setModalOpen(false)} />
 
+      {/* Popup تعديل مندوب */}
+      <EditDelegateDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        delegate={selectedDelegate}
+        onSave={saveDelegate}
+      />
+
+      {/* Popup تأكيد حذف مندوب */}
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={confirmDelete}
+        productName={selectedDelegate?.name || ""}
+      />
     </div>
   );
 };
