@@ -1,12 +1,16 @@
 import { useState, type ChangeEvent } from "react";
+import DynamicMap from "@/components/DynamicMap";
 
 const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
+  const [mapEditable, setMapEditable] = useState(false);
+  const [position, setPosition] = useState({ lat: 35.52, lng: 35.8 });
 
   const [profileData, setProfileData] = useState({
     username: "ecofactory_admin",
     email: "admin@ecofactory.com",
-    location: "Industrial Zone, Green City",
+    location: "Industrial Zone, Green City", // مرتبط بالخريطة
+    address: "lattakia", // الحقل الجديد جنب الـ location
     phone: "+1 555-ECO-FACT",
   });
 
@@ -42,6 +46,7 @@ const Profile = () => {
       }
     }
     setIsEditing(!isEditing);
+    setMapEditable(false);
   };
 
   const initials = profileData.username
@@ -81,7 +86,6 @@ const Profile = () => {
           <div>
             <h3 className="text-2xl font-semibold text-gray-800">Mohammed</h3>
 
-            {/* زر تغيير الصورة تحت كلمة Factory Owner */}
             {isEditing && (
               <label
                 htmlFor="image-upload"
@@ -102,6 +106,8 @@ const Profile = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+
+          {/* Username */}
           <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700">Username</label>
             {isEditing ? (
@@ -117,6 +123,7 @@ const Profile = () => {
             )}
           </div>
 
+          {/* Email */}
           <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700">Email</label>
             {isEditing ? (
@@ -132,21 +139,65 @@ const Profile = () => {
             )}
           </div>
 
+          {/* Location + map */}
           <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700">Location</label>
             {isEditing ? (
-              <input
-                type="text"
-                name="location"
-                value={profileData.location}
-                onChange={handleInputChange}
-                className="w-full p-3 rounded-lg border border-gray-300"
-              />
+              <>
+                <div className="flex justify-between items-center mb-1">
+                  <input
+                    type="text"
+                    name="location"
+                    value={profileData.location}
+                    onChange={handleInputChange}
+                    className="w-full p-3 rounded-lg border border-gray-300"
+                    disabled={!mapEditable}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setMapEditable((prev) => !prev)}
+                    className={`ml-3 px-4 py-2 rounded text-white ${
+                      mapEditable ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"
+                    }`}
+                  >
+                    {mapEditable ? "Confirm" : "Edit"}
+                  </button>
+                </div>
+                <DynamicMap
+                  address={profileData.location}
+                  initialPosition={position}
+                  onPositionChange={(pos) => {
+                    if (mapEditable) setPosition(pos);
+                  }}
+                  onAddressChange={(addr) => {
+                    if (mapEditable) setProfileData((prev) => ({ ...prev, location: addr }));
+                  }}
+                  isEditable={mapEditable}
+                />
+              </>
             ) : (
               <p className="text-gray-900 bg-gray-50 p-3 rounded-lg">{profileData.location}</p>
             )}
           </div>
 
+          {/* Address field جنب الـ Location */}
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-700">Address</label>
+            {isEditing ? (
+              <input
+                type="text"
+                name="address"
+                value={profileData.address}
+                onChange={handleInputChange}
+                className="w-full p-3 rounded-lg border border-gray-300"
+                placeholder="Enter additional address info"
+              />
+            ) : (
+              <p className="text-gray-900 bg-gray-50 p-3 rounded-lg">{profileData.address}</p>
+            )}
+          </div>
+
+          {/* Phone */}
           <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700">Phone Number</label>
             {isEditing ? (
@@ -174,7 +225,6 @@ const Profile = () => {
           </button>
         </div>
       </div>
-
     </div>
   );
 };
