@@ -1,18 +1,36 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import OrdersModal from "@/components/modals/OrdersModal";
+import EditDialog from "@/components/modals/EditDialog";
+import DeleteConfirmDialog from "@/components/modals/DeleteConfirmDialog"; // استيراد مودال الحذف
+
+interface Order {
+  id: string;
+  material: string;
+  price: string;
+  location: string;
+  status: string;
+  delegate?: string;
+  commit?: string;
+}
 
 const AdminOrders = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null);
+  const [selectedOrderDelegate, setSelectedOrderDelegate] = useState<string | null>(null);
+  const [selectedOrderStatus, setSelectedOrderStatus] = useState<string>("");
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedCommit, setSelectedCommit] = useState<string>("");
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);  // حالة مودال الحذف
 
-  const orders = [
+  const orders: Order[] = [
     {
       id: "1001",
       material: "150 kg Recycled Paper",
       price: "$22.50",
       location: "123 Green Street, Eco City",
       status: "Pending",
+      commit: "",
     },
     {
       id: "1002",
@@ -20,9 +38,49 @@ const AdminOrders = () => {
       price: "$50.00",
       location: "456 Recycle Ave, Green Town",
       status: "Processing",
-      delegate: "John Smith",
+      delegate: "john",
+      commit: "Initial commit 2",
     },
   ];
+
+  // تحديث الموزع
+  const updateDelegate = (orderId: string, newDelegate: string) => {
+    console.log(`Order ${orderId} delegate updated to: ${newDelegate}`);
+    setModalOpen(false);
+  };
+
+  // تحديث commit
+  const updateCommit = (newCommit: string) => {
+    console.log("Updated commit:", newCommit);
+    setEditModalOpen(false);
+  };
+
+  // حذف الطلب
+  const deleteOrder = (orderId: string) => {
+    console.log(`Order ${orderId} deleted`);
+    setDeleteModalOpen(false);
+    // هنا تقدر تحدث البيانات بالـ state أو API حسب مشروعك
+  };
+
+  // فتح مودال التعديل مع ضبط قيمة commit
+  const openEditModalForOrder = (order: Order) => {
+    setSelectedOrder(order.id);
+    setSelectedCommit(order.commit || "");
+    setEditModalOpen(true);
+  };
+
+  const openModalForOrder = (order: Order) => {
+    setSelectedOrder(order.id);
+    setSelectedOrderDelegate(order.delegate || null);
+    setSelectedOrderStatus(order.status);
+    setModalOpen(true);
+  };
+
+  // فتح مودال الحذف مع تعيين الطلب المحدد
+  const openDeleteModalForOrder = (order: Order) => {
+    setSelectedOrder(order.id);
+    setDeleteModalOpen(true);
+  };
 
   return (
     <div id="ordersPage" className="page-content">
@@ -41,8 +99,11 @@ const AdminOrders = () => {
                 <p className="text-gray-600">Pickup Location: {order.location}</p>
                 {order.delegate && (
                   <p className="text-gray-600">
-                    Assigned Delegate: {order.delegate}
+                    Assigned Delegate: {order.delegate === "john" ? "John Smith" : order.delegate === "maria" ? "Maria Johnson" : order.delegate}
                   </p>
+                )}
+                {order.commit && (
+                  <p className="text-gray-600">Commit: {order.commit}</p>
                 )}
               </div>
               <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm">
@@ -53,10 +114,7 @@ const AdminOrders = () => {
             <div className="flex space-x-3">
               {order.status === "Pending" && (
                 <Button
-                  onClick={() => {
-                    setSelectedOrder(order.id);
-                    setModalOpen(true);
-                  }}
+                  onClick={() => openModalForOrder(order)}
                   className="bg-[#4ade80] hover:bg-[#16a34a] text-white cursor-pointer"
                 >
                   Approve
@@ -64,29 +122,62 @@ const AdminOrders = () => {
               )}
               {order.status === "Processing" && (
                 <Button
-                  onClick={() => {
-                    setSelectedOrder(order.id);
-                    setModalOpen(true);
-                  }}
+                  onClick={() => openModalForOrder(order)}
                   className="bg-gray-500 hover:bg-gray-600 text-white cursor-pointer"
                 >
                   Change Delegate
                 </Button>
               )}
-              {order.status === "Pending" && (
-                <Button className="bg-red-500 hover:bg-red-600 text-white cursor-pointer">
+              {(order.status === "Pending" || order.status === "Complete") && (
+                <Button
+                  onClick={() => openDeleteModalForOrder(order)} // نفتح مودال الحذف هنا
+                  className="bg-red-500 hover:bg-red-600 text-white cursor-pointer"
+                >
                   Cancel
                 </Button>
               )}
-              <Button className="bg-blue-500 hover:bg-blue-600 text-white cursor-pointer">
-                Delivered
-              </Button>
+              {order.status !== "Processing" && (
+                <Button
+                  onClick={() => openEditModalForOrder(order)}
+                  className="bg-blue-500 hover:bg-blue-600 text-white cursor-pointer"
+                >
+                  Edit
+                </Button>
+              )}
             </div>
           </div>
         ))}
       </div>
 
-      <OrdersModal open={modalOpen} onClose={() => setModalOpen(false)} />
+      <OrdersModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        initialDelegate={selectedOrderDelegate}
+        orderStatus={selectedOrderStatus}
+        onConfirm={(newDelegate) => {
+          if (selectedOrder) {
+            updateDelegate(selectedOrder, newDelegate);
+          }
+        }}
+      />
+
+      <EditDialog
+        open={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        initialCommit={selectedCommit}
+        onSave={updateCommit}
+      />
+
+      <DeleteConfirmDialog
+        open={deleteModalOpen}
+        onOpenChange={setDeleteModalOpen}
+        onConfirm={() => {
+          if (selectedOrder) {
+            deleteOrder(selectedOrder);
+          }
+        }}
+        productName={`Order #${selectedOrder}`}
+      />
 
       <div className="mt-8 text-center">
         <div className="flex items-center justify-center">
