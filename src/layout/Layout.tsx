@@ -5,6 +5,7 @@ import { Menu } from "lucide-react";
 import { FiFileText } from "react-icons/fi";
 import { HiOutlineUserGroup } from "react-icons/hi2";
 import { BsPerson } from "react-icons/bs";
+import Footer from "@/components/Footer";
 
 
 const Layout = ({ role }: { role: "user" | "admin" }) => {
@@ -23,14 +24,20 @@ const Layout = ({ role }: { role: "user" | "admin" }) => {
               </SheetTrigger>
               <SheetContent side="left" className="p-0">
                 <div className="p-6">
-                  <h1 className="text-2xl font-bold text-[#6b7280] mb-2">🌱 Eco-Revival</h1>
+                  <h1 className="text-2xl font-bold text-[#6b7280] mb-2 flex items-center justify-start gap-1">
+                    <img src="/images/logo.jpg" alt="" className="w-[50px] h-[50px] object-contain" /> 
+                    Eco-Revival
+                  </h1>
                   <hr className="mb-4" />
                   <SidebarContent role={role} />
                 </div>
               </SheetContent>
             </Sheet>
 
-            <h1 className="hidden md:block text-2xl font-bold text-[#6b7280]">🌱 Eco-Revival</h1>
+            <h1 className="hidden md:flex items-center justify-between text-2xl font-bold text-[#6b7280]">
+              <img src="/images/logo.jpg" alt="" className="w-[50px] h-[50px] object-contain" /> 
+              Eco-Revival
+            </h1>
           </div>
 
           <div className="flex items-center space-x-4">
@@ -63,6 +70,7 @@ const Layout = ({ role }: { role: "user" | "admin" }) => {
         {/* Main content */}
         <main className="flex-1 p-6">
           <Outlet />
+          <Footer />
         </main>
       </div>
     </div>

@@ -109,10 +109,6 @@ const Home = () => {
               </div>
           </div>
       </div>
-
-      <div className="text-center">
-          <p className="text-[#6b7280] text-sm">Powered by <span className="font-semibold text-[#4ade80]">HoudiX</span></p>
-      </div>
   </div>
   )
 }
