@@ -136,13 +136,13 @@ const PlaceOrder = () => {
         ← Back to Factory
       </button>
 
-      <h2 className="text-2xl font-bold text-eco-gray mb-6">Place Your Order</h2>
+      <h2 className="text-2xl font-bold text-[#6b7280] mb-6">Place Your Order</h2>
 
       <div className="bg-white rounded-xl shadow-md p-6">
         <form id="orderFormData" className="space-y-6" onSubmit={handleSubmit}>
           {/* المواد */}
           <div>
-            <label className="block text-eco-gray font-medium mb-2">Select Materials to Sell</label>
+            <label className="block text-[#6b7280] font-medium mb-2">Select Materials to Sell</label>
             {errors.materials && <p className="text-red-500 text-sm mb-2">{errors.materials}</p>}
             <div className="space-y-2">
               {materialsData.map((material) => (
@@ -158,7 +158,7 @@ const PlaceOrder = () => {
                         className="material-checkbox"
                         data-price={material.price}
                       />
-                      <label htmlFor={`material_${material.id}`} className="text-eco-gray font-medium">
+                      <label htmlFor={`material_${material.id}`} className="text-[#6b7280] font-medium">
                         {material.label} - ${material.price}/kg
                       </label>
                     </div>
@@ -166,7 +166,7 @@ const PlaceOrder = () => {
 
                   {selectedMaterials[material.id] && (
                     <div className="mt-3">
-                      <label className="block text-sm text-eco-gray mb-1">Quantity (kg)</label>
+                      <label className="block text-sm text-[#6b7280] mb-1">Quantity (kg)</label>
                       <input
                         type="number"
                         id={`qty_${material.id}`}
@@ -174,7 +174,7 @@ const PlaceOrder = () => {
                         min={1}
                         value={quantities[material.id] || ""}
                         onChange={(e) => handleQuantityChange(material.id, Number(e.target.value))}
-                        className={`w-full px-3 py-2 rounded-lg focus:ring-2 focus:ring-eco-green focus:border-transparent ${
+                        className={`w-full px-3 py-2 border-gray-300 border-[1px] rounded-lg focus:ring-2 focus:ring-[#4ade80] focus:border-transparent ${
                           errors.quantities ? "border-red-500" : "border-gray-300"
                         }`}
                         required
@@ -188,7 +188,7 @@ const PlaceOrder = () => {
 
           {/* الموقع */}
           <div>
-            <label className="block text-eco-gray font-medium mb-2">Current Location</label>
+            <label className="block text-[#6b7280] font-medium mb-2">Current Location</label>
             {errors.locationText && <p className="text-red-500 text-sm mb-1">{errors.locationText}</p>}
             <input
               type="text"
@@ -196,7 +196,7 @@ const PlaceOrder = () => {
               value={locationText}
               onChange={(e) => setLocationText(e.target.value)}
               placeholder="e.g., Latakia, Syria"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-eco-green focus:border-transparent"
+              className="w-full px-4 py-3 border-[1px] border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4ade80] focus:border-transparent"
               required
               disabled={!isEditingLocation} // تعطيل الحقل لو ما عم يعدل
             />
@@ -234,7 +234,7 @@ const PlaceOrder = () => {
 
           {/* العنوان */}
           <div>
-            <label className="block text-eco-gray font-medium mb-2">Full Address</label>
+            <label className="block text-[#6b7280] font-medium mb-2">Full Address</label>
             {errors.address && <p className="text-red-500 text-sm mb-1">{errors.address}</p>}
             <input
               type="text"
@@ -243,21 +243,21 @@ const PlaceOrder = () => {
               onChange={(e) => setAddress(e.target.value)}
               placeholder="Enter your full address"
               maxLength={256}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-eco-green focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4ade80] focus:border-transparent"
               required
             />
           </div>
 
           {/* تاريخ الاستلام */}
           <div>
-            <label className="block text-eco-gray font-medium mb-2">Preferred Pickup Date</label>
+            <label className="block text-[#6b7280] font-medium mb-2">Preferred Pickup Date</label>
             {errors.pickupDate && <p className="text-red-500 text-sm mb-1">{errors.pickupDate}</p>}
             <input
               type="date"
               name="pickupDate"
               value={pickupDate}
               onChange={(e) => setPickupDate(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-eco-green focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4ade80] focus:border-transparent"
               required
               min={new Date().toISOString().split("T")[0]}
             />
@@ -271,7 +271,7 @@ const PlaceOrder = () => {
               name="pickupTime"
               value={pickupTime}
               onChange={(e) => setPickupTime(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-eco-green focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4ade80] focus:border-transparent"
               required
             >
               <option value="">Select time</option>
@@ -283,10 +283,10 @@ const PlaceOrder = () => {
           </div>
 
           {/* السعر المقدر */}
-          <div className="bg-eco-green bg-opacity-20 p-4 rounded-lg">
-            <p className="text-eco-gray font-medium">
+          <div className="bg-[#e7fcee] bg-opacity-20 p-4 rounded-lg">
+            <p className="text-[#6b7280] font-medium">
               Estimated Total Price:{" "}
-              <span className="text-eco-green-dark font-bold">${estimatedPrice.toFixed(2)}</span>
+              <span className="text-[#4ade80] font-bold">${estimatedPrice.toFixed(2)}</span>
             </p>
           </div>
 

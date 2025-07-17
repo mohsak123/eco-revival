@@ -178,11 +178,7 @@ const EditOrderDialog: React.FC<EditOrderDialogProps> = ({
               <button
                 type="button"
                 onClick={() => setIsEditable((prev) => !prev)}
-                className={`text-sm font-medium px-3 py-1 rounded ${
-                  isEditable
-                    ? "bg-green-500 text-white hover:bg-green-600"
-                    : "bg-blue-500 text-white hover:bg-blue-600"
-                }`}
+                className={`text-sm font-medium px-3 py-1 rounded bg-[#4ade80] hover:bg-[#16a34a] cursor-pointer text-white`}
               >
                 {isEditable ? "Confirm" : "Edit"}
               </button>
@@ -248,7 +244,7 @@ const EditOrderDialog: React.FC<EditOrderDialogProps> = ({
 
           {/* زر الحفظ */}
           <div className="text-right pt-2">
-            <Button type="submit">Save Changes</Button>
+            <Button type="submit" className="bg-[#4ade80] hover:bg-[#16a34a] cursor-pointer">Save Changes</Button>
           </div>
         </form>
       </DialogContent>

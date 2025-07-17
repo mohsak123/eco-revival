@@ -1,11 +1,13 @@
 import { Link, Outlet } from "react-router-dom";
 import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Menu } from "lucide-react";
+import { LogOut, Menu } from "lucide-react";
 import { FiFileText } from "react-icons/fi";
 import { HiOutlineUserGroup } from "react-icons/hi2";
 import { BsPerson } from "react-icons/bs";
 import Footer from "@/components/Footer";
+import { useState } from "react";
+import LogoutConfirmDialog from "@/components/modals/LogoutConfirmDialog";
 
 
 const Layout = ({ role }: { role: "user" | "admin" }) => {
@@ -104,8 +106,15 @@ const SidebarContent = ({ role }: { role: "user" | "admin" }) => {
   const handleLogout = () =>{
     localStorage.clear();
     location.reload();
-
   }
+
+  const [logoutOpen, setLogoutOpen] = useState(false);
+
+  const handleConfirmLogout = () => {
+    localStorage.clear();
+    location.reload();
+  };
+  
 
   return (
     <nav className="md:p-6 space-y-2">
@@ -121,11 +130,21 @@ const SidebarContent = ({ role }: { role: "user" | "admin" }) => {
       ))}
 
       <div className="mt-6">
-        <button onClick={handleLogout} className="w-full flex items-center cursor-pointer space-x-3 px-4 py-3 text-left text-red-600 hover:bg-red-50 rounded-lg transition duration-200">
-          <span>🚪</span>
+        <button
+          onClick={() => setLogoutOpen(true)}
+          className="w-full flex items-center cursor-pointer space-x-3 px-4 py-3 text-left text-red-600 hover:bg-red-50 rounded-lg transition duration-200"
+        >
+          <LogOut />
           <span>Logout</span>
         </button>
       </div>
+
+      <LogoutConfirmDialog
+        open={logoutOpen}
+        onOpenChange={setLogoutOpen}
+        onConfirm={handleConfirmLogout}
+      />
+
     </nav>
   );
 };

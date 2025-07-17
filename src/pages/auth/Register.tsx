@@ -1,24 +1,31 @@
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { registerUser } from '@/store/authSlice';
+import DynamicMap from '@/components/DynamicMap';
+
+type Position = {
+  lat: number;
+  lng: number;
+};
 
 const Register = () => {
-  // const dispatch = useAppDispatch();
-  // const { loading, error } = useAppSelector(state => state.auth);
-
   const [formData, setFormData] = useState({
     username: '',
     fullname: '',
     email: '',
     phone: '',
     address: '',
-    city: '',
-    state: '',
     password: '',
     confirmPassword: '',
   });
+
+  const [position, setPosition] = useState<Position>({
+    lat: 35.52,
+    lng: 35.8,
+  });
+
+  const [locationText, setLocationText] = useState("Latakia, Syria");
+  const [isEditingLocation, setIsEditingLocation] = useState(false);
 
   const validateForm = () => {
     if (!formData.username.trim()) return 'Username is required.';
@@ -27,6 +34,7 @@ const Register = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) return 'Invalid email address.';
     if (!formData.phone.trim()) return 'Phone Number is required.';
+    if (!formData.address.trim()) return 'Address is required.';
     if (!formData.password) return 'Password is required.';
     if (formData.password.length < 6) return 'Password must be at least 6 characters.';
     if (formData.password !== formData.confirmPassword) return 'Passwords do not match.';
@@ -44,14 +52,16 @@ const Register = () => {
       toast.error(validationError);
       return;
     }
-    // dispatch(registerUser(formData))
-    //   .unwrap()
-    //   .then(() => toast.success('Registration successful!'))
-    //   .catch(msg => toast.error(msg));
+
+    toast.success("Form is valid. Ready to submit.");
+    console.log("Final Data", { ...formData, position, locationText });
   };
 
+  const handleEditLocation = () => setIsEditingLocation(true);
+  const handleConfirmLocation = () => setIsEditingLocation(false);
+
   return (
-    <div id="signupPage" className="py-8 min-h-screen flex items-center justify-center bg-gradient-to-br from-[#86efac] to-white">
+    <div className="py-8 min-h-screen flex items-center justify-center bg-gradient-to-br from-[#86efac] to-white">
       <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md fade-in">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-eco-gray mb-2 flex items-center justify-center gap-1">
@@ -60,7 +70,8 @@ const Register = () => {
           </h1>
           <p className="text-eco-gray">Create your account</p>
         </div>
-        <form id="signupForm" onSubmit={handleSubmit} className="space-y-4" noValidate>
+
+        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           <input
             name="username"
             type="text"
@@ -68,7 +79,6 @@ const Register = () => {
             value={formData.username}
             onChange={handleChange}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg"
-            required
           />
           <input
             name="fullname"
@@ -77,7 +87,6 @@ const Register = () => {
             value={formData.fullname}
             onChange={handleChange}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg"
-            required
           />
           <input
             name="email"
@@ -86,7 +95,6 @@ const Register = () => {
             value={formData.email}
             onChange={handleChange}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg"
-            required
           />
           <input
             name="phone"
@@ -95,32 +103,59 @@ const Register = () => {
             value={formData.phone}
             onChange={handleChange}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg"
-            required
           />
+
+          {/* Location Name Field */}
+          <input
+            type="text"
+            name="location"
+            value={locationText}
+            onChange={(e) => setLocationText(e.target.value)}
+            placeholder="e.g., Latakia, Syria"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+            disabled={!isEditingLocation}
+          />
+
+          {/* Map */}
+          <DynamicMap
+            initialPosition={position}
+            address={locationText}
+            onPositionChange={(pos) => {
+              if (isEditingLocation) setPosition(pos);
+            }}
+            onAddressChange={(newAddr) => {
+              if (isEditingLocation) setLocationText(newAddr);
+            }}
+            isEditable={isEditingLocation}
+          />
+
+          {!isEditingLocation ? (
+            <button
+              type="button"
+              onClick={handleEditLocation}
+              className="w-full bg-[#4ade80] text-white font-medium py-2 rounded"
+            >
+              Edit Location
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleConfirmLocation}
+              className="w-full bg-[#22c55e] text-white font-medium py-2 rounded"
+            >
+              Confirm Location
+            </button>
+          )}
+
           <input
             name="address"
             type="text"
-            placeholder="Address"
+            placeholder="Full Address"
             value={formData.address}
             onChange={handleChange}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg"
           />
-          <input
-            name="city"
-            type="text"
-            placeholder="City"
-            value={formData.city}
-            onChange={handleChange}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg"
-          />
-          <input
-            name="state"
-            type="text"
-            placeholder="State"
-            value={formData.state}
-            onChange={handleChange}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg"
-          />
+
           <input
             name="password"
             type="password"
@@ -128,7 +163,6 @@ const Register = () => {
             value={formData.password}
             onChange={handleChange}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg"
-            required
           />
           <input
             name="confirmPassword"
@@ -137,18 +171,15 @@ const Register = () => {
             value={formData.confirmPassword}
             onChange={handleChange}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg"
-            required
           />
           <button
             type="submit"
-            // disabled={loading}
             className="w-full bg-[#86efac] hover:bg-[#4ade80] text-white font-semibold py-3 rounded-lg"
           >
-            {/* {loading ? 'Registering...' : 'Sign Up'} */}
             Sign Up
           </button>
-          {/* {error && <p className="text-red-600 mt-2">{error}</p>} */}
         </form>
+
         <p className="text-center mt-6 text-eco-gray">
           Already have an account?{' '}
           <Link to="/login" className="text-[#4ade80] hover:underline font-medium cursor-pointer">

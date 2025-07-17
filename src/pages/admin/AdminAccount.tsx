@@ -106,9 +106,11 @@ const AdminAccount = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+        {/* <div className=" mt-6"> */}
 
-          {/* بقية الحقول */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
+
+            {/* بقية الحقول */}
           <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700">Username</label>
             {isEditing ? (
@@ -139,7 +141,26 @@ const AdminAccount = () => {
             )}
           </div>
 
-          {/* Location field + map */}
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-700">Phone Number</label>
+            {isEditing ? (
+              <input
+                type="tel"
+                name="phone"
+                value={profileData.phone}
+                onChange={handleInputChange}
+                className="w-full p-3 rounded-lg border border-gray-300"
+              />
+            ) : (
+              <p className="text-gray-900 bg-gray-50 p-3 rounded-lg">{profileData.phone}</p>
+            )}
+          </div>
+
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                      {/* Location field + map */}
           <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700">Location</label>
             {isEditing ? (
@@ -197,21 +218,8 @@ const AdminAccount = () => {
             )}
           </div>
 
-<div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Phone Number</label>
-            {isEditing ? (
-              <input
-                type="tel"
-                name="phone"
-                value={profileData.phone}
-                onChange={handleInputChange}
-                className="w-full p-3 rounded-lg border border-gray-300"
-              />
-            ) : (
-              <p className="text-gray-900 bg-gray-50 p-3 rounded-lg">{profileData.phone}</p>
-            )}
           </div>
-          
+
         </div>
 
         <div className="mt-8">
@@ -225,7 +233,7 @@ const AdminAccount = () => {
           </button>
         </div>
       </div>
-    </div>
+    // </div>
   );
 };
 
