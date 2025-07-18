@@ -14,6 +14,7 @@ interface User {
 interface AuthState {
   user: User | null;
   token: string | null;
+  role: 'user' | 'admin';
   loading: boolean;
   error: string | null;
 }
@@ -21,6 +22,7 @@ interface AuthState {
 interface LoginPayload {
   username: string;
   password: string;
+  isCompany?: boolean;
 }
 
 interface RegisterPayload {
@@ -34,6 +36,7 @@ interface RegisterPayload {
   state?: string;
 }
 
+/* ----------- User Api ----------- */
 
 // ⏳ login
 export const loginUser = createAsyncThunk<
@@ -42,7 +45,6 @@ export const loginUser = createAsyncThunk<
   { rejectValue: string }
 >('auth/loginUser', async (data, thunkAPI) => {
   try {
-    console.log(BASE_URL)
     const response = await axios.post(`${BASE_URL}/houdix/eco/auth/user/login`, data);
     return response.data;
   } catch (err: any) {
@@ -64,7 +66,6 @@ export const registerUser = createAsyncThunk<
   }
 });
 
-
 // ⏳ getProfile
 export const getProfile = createAsyncThunk<
   User,
@@ -82,10 +83,28 @@ export const getProfile = createAsyncThunk<
   }
 });
 
+/* ----------- Company Api ----------- */
+
+// ⏳ login Company
+export const loginCompany = createAsyncThunk<
+  { factory: User; token: string },
+  LoginPayload,
+  { rejectValue: string }
+>("auth/loginCompany", async (data, thunkAPI) => {
+  try {
+    const response = await axios.post(`${BASE_URL}/houdix/eco/auth/factory/login`, data);
+    return response.data
+  } catch (err: any) {
+    return thunkAPI.rejectWithValue(err.response?.data?.message || 'Login failed');
+  }
+})
+
+
 // 🧠 Slice
 const initialState: AuthState = {
-  user: null,
+  user: localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!) : null,
   token: localStorage.getItem('token'),
+  role: localStorage.getItem('role') === 'admin' ? 'admin' : 'user',
   loading: false,
   error: null,
 };
@@ -97,7 +116,14 @@ const authSlice = createSlice({
     logout(state) {
       state.user = null;
       state.token = null;
+      state.role = 'user';
       localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('role');
+    },
+    setRole(state, action) {
+      state.role = action.payload;
+      localStorage.setItem('role', action.payload);
     },
   },
   extraReducers: (builder) => {
@@ -111,8 +137,8 @@ const authSlice = createSlice({
         state.loading = false;
         state.user = action.payload.user;
         state.token = action.payload.token;
-        // localStorage.setItem('token', action.payload.token);
-        // localStorage.setItem('user', JSON.stringify(action.payload.user));
+        localStorage.setItem('token', action.payload.token);
+        localStorage.setItem('user', JSON.stringify(action.payload.user));
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
@@ -148,9 +174,26 @@ const authSlice = createSlice({
       .addCase(getProfile.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Profile failed';
-      });
+      })
+
+      // Login Company
+      .addCase(loginCompany.pending , (state) => {
+        state.loading = true,
+        state.error = null
+      })
+      .addCase(loginCompany.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload.factory;
+        state.token = action.payload.token;
+        localStorage.setItem('token', action.payload.token);
+        localStorage.setItem('user', JSON.stringify(action.payload.factory));
+      })
+      .addCase(loginCompany.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Login failed"
+      })
   },
 });
 
-export const { logout } = authSlice.actions;
+export const { logout, setRole } = authSlice.actions;
 export default authSlice.reducer;

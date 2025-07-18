@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import Layout from './layout/Layout';
@@ -19,24 +19,27 @@ import { Toaster } from "react-hot-toast";
 import PrivateRoutes from './utils/privateRoutes';
 import SingleFactory from './pages/SingleFactory';
 import PlaceOrder from './pages/PlaceOrder';
+import type { RootState } from './store/store';
 
 const NotFound = () => (
   <div className='text-3xl text-red-500 flex items-center justify-center h-screen'>404 - Page Not Found</div>
 );
 
 const App = () => {
-  const [user, setUser] = useState(localStorage.getItem("user") === "true" ? true : false);
-  const [role, setRole] = useState<"user" | "admin">(localStorage.getItem("role") === "admin" ? "admin" : "user");
-
-  const isAuthenticated = user;
-
-  // setUser(true)
+  const { user, token } = useSelector((state: RootState) => state.auth);
+  
+  const role = localStorage.getItem("role") === "admin" ? "admin" : "user";
+  
+  const isAuthenticated = !!(user && token);
 
   return (
     <>
       <Toaster position="top-center" />
       <Router>
         <Routes>
+          <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to={role === "admin" ? "/dashboard" : "/"} replace />} />
+          <Route path="/register" element={!isAuthenticated ? <Register /> : <Navigate to={role === "admin" ? "/dashboard" : "/"} replace />} />
+          
           <Route element={<Layout role={role} />}>
             <Route
               element={
@@ -53,7 +56,6 @@ const App = () => {
               <Route path="/factories" element={<Factories />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/help" element={<Help />} />
-
               <Route path="/factories/factory" element={<SingleFactory />} />
               <Route path="/factories/factory/order" element={<PlaceOrder />} />
             </Route>
@@ -76,8 +78,6 @@ const App = () => {
             </Route>
           </Route>
 
-          <Route path="/login" element={!user ? <Login /> : <Navigate to="/" replace />} />
-          <Route path="/register" element={!user ? <Register /> : <Navigate to="/" replace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>

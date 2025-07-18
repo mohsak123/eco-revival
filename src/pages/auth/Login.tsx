@@ -1,82 +1,86 @@
-import { useState } from "react";
-import toast from "react-hot-toast";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { loginUser } from "@/store/authSlice";
+import { loginUser, loginCompany, setRole } from "@/store/authSlice";
 import type { AppDispatch } from "@/store/store";
+import { useState, useEffect } from "react";
+import toast from "react-hot-toast";
 
+// 1. تعريف schema باستخدام zod
+const loginSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+type LoginForm = z.infer<typeof loginSchema>;
 
 const Login = () => {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
   const [isCompany, setIsCompany] = useState(false);
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
+  const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
 
-  const handleSubmit = async(e: React.FormEvent) => {
-    e.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginForm>({
+    resolver: zodResolver(loginSchema),
+  });
 
-    if (username.trim() === "") {
-      toast.error("Please enter a username");
-      return;
-    }
-
-    if (password.trim() === "") {
-      toast.error("Please enter your password.");
-      return;
-    }
-
-    if (password.length < 6) {
-      toast.error("Password must be at least 6 characters.");
-      return;
-    }
-
+  // دالة التنفيذ عند submit
+  const onSubmit = async (data: LoginForm) => {
     setLoading(true);
+    setApiError(null);
 
-    const resultAction = await dispatch(
-    loginUser({
-      username: username.trim(),
-      password: password.trim(),
-      })
-    );
-
-    if (loginUser.fulfilled.match(resultAction)) {
-      toast.success("Welcome back!");
-
-      // if (isCompany) {
-      //   navigate("/dashboard");
-      // } else {
-      //   navigate("/");
-      // }
-    } else {
-      toast.error(resultAction.payload || "Login failed");
-    }
-
-    
-    setTimeout(() => {
-      toast.success(`Welcome back!`);
-      localStorage.setItem("user", "true");
+    try {
       if (isCompany) {
-        localStorage.setItem("role", "admin");
-        navigate("/dashboard");
+        const resultAction = await dispatch(
+          loginCompany({
+            username: data.username.trim(),
+            password: data.password.trim(),
+            isCompany,
+          })
+        );
+
+        if (loginCompany.fulfilled.match(resultAction)) {
+          dispatch(setRole("admin"));
+          toast.success("Welcome back, Company!");
+          navigate("/dashboard");
+        } else {
+          // الخطأ في reject
+          const errMsg = (resultAction.payload as string) || "Login failed";
+          setApiError(errMsg);
+          toast.error(errMsg);
+        }
       } else {
-        localStorage.setItem("role", "user");
-        navigate("/");
+        const resultAction = await dispatch(
+          loginUser({
+            username: data.username.trim(),
+            password: data.password.trim(),
+            isCompany,
+          })
+        );
+
+        if (loginUser.fulfilled.match(resultAction)) {
+          dispatch(setRole("user"));
+          toast.success("Welcome back!");
+          navigate("/");
+        } else {
+          const errMsg = (resultAction.payload as string) || "Login failed";
+          setApiError(errMsg);
+          toast.error(errMsg);
+        }
       }
+    } catch (error) {
+      toast.error("An unexpected error occurred");
+    } finally {
       setLoading(false);
-    }, 1000);
-
-    setTimeout(()=>{
-      location.reload();
-
-    },1500)
-
-    console.log(resultAction)
-
-    setLoading(false);
-
+    }
   };
 
   return (
@@ -84,36 +88,45 @@ const Login = () => {
       <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md fade-in">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-eco-gray mb-2 flex items-center justify-center gap-1">
-            <img src="/images/logo.jpg" alt="" className="w-[70px] h-[70px] object-cover" /> 
+            <img src="/images/logo.jpg" alt="" className="w-[70px] h-[70px] object-cover" />
             Eco-Revival
           </h1>
           <p className="text-eco-gray">Sustainable Recycling Platform</p>
         </div>
-        <form id="loginForm" onSubmit={handleSubmit} className="space-y-6" noValidate>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
           <div>
-            <label className="block text-eco-gray font-medium mb-2">Email</label>
+            <label className="block text-eco-gray font-medium mb-2">Username</label>
             <input
               type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#86efac] focus:border-transparent"
+              {...register("username")}
+              className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#86efac] focus:border-transparent
+                ${errors.username ? "border-red-500 focus:ring-red-500" : ""}
+              `}
               placeholder="user name"
               disabled={loading}
             />
+            {errors.username && (
+              <p className="text-red-500 text-sm mt-1">{errors.username.message}</p>
+            )}
           </div>
+
           <div>
             <label className="block text-eco-gray font-medium mb-2">Password</label>
             <input
               type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#86efac] focus:border-transparent"
-              placeholder="••••••••"
+              {...register("password")}
+              className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#86efac] focus:border-transparent
+                ${errors.password ? "border-red-500 focus:ring-red-500" : ""}
+              `}
+              placeholder="password"
               disabled={loading}
             />
+            {errors.password && (
+              <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
+            )}
           </div>
 
-          {/* checkbox WeAreCompany */}
           <div className="flex items-center space-x-2">
             <input
               id="weAreCompany"
@@ -136,6 +149,7 @@ const Login = () => {
             {loading ? "Logging in..." : "Login"}
           </button>
         </form>
+
         <p className="text-center mt-6 text-eco-gray">
           Don't have an account?{" "}
           <Link
