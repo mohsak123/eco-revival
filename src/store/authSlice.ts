@@ -7,9 +7,18 @@ const BASE_URL = import.meta.env.VITE_API_URL;
 // 🧾 أنواع البيانات
 interface User {
   id: string;
-  name: string;
+  username: string;
+  fullname: string;
   email: string;
+  phone: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  location?: string;
+  lat?: number;
+  lng?: number;
 }
+
 
 interface AuthState {
   user: User | null;
@@ -32,9 +41,25 @@ interface RegisterPayload {
   email: string;
   phone: string;
   address?: string;
-  city?: string;
-  state?: string;
+  location?: string;
+  lat?: number;
+  lng?: number;
 }
+
+interface CompanyRegisterPayload {
+  username: string;
+  password: string;
+  email: string;
+  phone: string;
+  address: string;
+  name: string;
+  record: string;
+  url: string;
+  location?: string;
+  lat?: number;
+  lng?: number;
+}
+
 
 /* ----------- User Api ----------- */
 
@@ -59,7 +84,8 @@ export const registerUser = createAsyncThunk<
   { rejectValue: string }
 >('auth/registerUser', async (data, thunkAPI) => {
   try {
-    const response = await axios.post(`${BASE_URL}/user/signup`, data);
+    const response = await axios.post(`${BASE_URL}/houdix/eco/auth/user/signup`, data);
+    console.log(response.data)
     return response.data;
   } catch (err: any) {
     return thunkAPI.rejectWithValue(err.response?.data?.message || 'Register failed');
@@ -97,7 +123,22 @@ export const loginCompany = createAsyncThunk<
   } catch (err: any) {
     return thunkAPI.rejectWithValue(err.response?.data?.message || 'Login failed');
   }
-})
+});
+
+
+export const registerCompany = createAsyncThunk<
+  { factory: User; token: string },
+  CompanyRegisterPayload,
+  { rejectValue: string }
+>('auth/registerCompany', async (data, thunkAPI) => {
+  try {
+    const response = await axios.post(`${BASE_URL}/factory/signup`, data);
+    return response.data;
+  } catch (err: any) {
+    return thunkAPI.rejectWithValue(err.response?.data?.message || 'Register company failed');
+  }
+});
+
 
 
 // 🧠 Slice
@@ -192,6 +233,24 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload || "Login failed"
       })
+
+            // registerCompany
+      .addCase(registerCompany.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(registerCompany.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload.factory;
+        state.token = action.payload.token;
+        localStorage.setItem('token', action.payload.token);
+        localStorage.setItem('user', JSON.stringify(action.payload.factory));
+      })
+      .addCase(registerCompany.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Register company failed';
+      })
+
   },
 });
 

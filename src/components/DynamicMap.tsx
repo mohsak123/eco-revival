@@ -1,12 +1,17 @@
-import { useState, useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaflet";
+import { useState, useEffect, useRef } from "react";
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from "react-leaflet";
+
+type Position = {
+  lat: number;
+  lng: number;
+};
 
 type Props = {
   initialPosition: Position;
   address: string;
   onPositionChange?: (pos: Position) => void;
   onAddressChange?: (newAddress: string) => void;
-  isEditable?: boolean; // <-- هنا تضيف المتحول
+  isEditable?: boolean;
 };
 
 const LocationMarker = ({
@@ -16,7 +21,6 @@ const LocationMarker = ({
   onMapClick: (lat: number, lng: number) => void;
   isEditable?: boolean;
 }) => {
-  // فقط لو isEditable true نسمح بالنقر على الخريطة
   useMapEvents({
     click(e) {
       if (isEditable) {
@@ -27,23 +31,56 @@ const LocationMarker = ({
   return null;
 };
 
+// مكون جديد لتحديث view الخريطة بدون re-render
+const MapUpdater = ({ position }: { position: Position }) => {
+  const map = useMap();
+  
+  useEffect(() => {
+    map.setView([position.lat, position.lng], map.getZoom());
+  }, [map, position.lat, position.lng]);
+
+  return null;
+};
+
 const DynamicMap = ({
   initialPosition,
   address,
   onPositionChange,
   onAddressChange,
-  isEditable = true, // القيمة الافتراضية true
+  isEditable = true,
 }: Props) => {
   const [position, setPosition] = useState<Position>(initialPosition);
+  const lastAddressRef = useRef<string>("");
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isInternalUpdateRef = useRef(false);
 
+  // تحديث الموقع من initialPosition بس لو كان مختلف فعلاً
   useEffect(() => {
-    const fetchCoordinates = async () => {
-      if (!address.trim()) return;
+    if (
+      Math.abs(initialPosition.lat - position.lat) > 0.0001 ||
+      Math.abs(initialPosition.lng - position.lng) > 0.0001
+    ) {
+      setPosition(initialPosition);
+    }
+  }, [initialPosition.lat, initialPosition.lng]);
 
-      const query = encodeURIComponent(address.trim());
-      const url = `https://nominatim.openstreetmap.org/search?q=${query}&format=json`;
+  // البحث عن الموقع من العنوان مع debounce
+  useEffect(() => {
+    // تجنب البحث إذا كان التحديث من داخل المكون أو العنوان فارغ
+    if (!address.trim() || address === lastAddressRef.current || isInternalUpdateRef.current) {
+      isInternalUpdateRef.current = false;
+      return;
+    }
 
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+
+    debounceTimeoutRef.current = setTimeout(async () => {
       try {
+        const query = encodeURIComponent(address.trim());
+        const url = `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1`;
+
         const res = await fetch(url, {
           headers: {
             "User-Agent": "eco-revival-app",
@@ -56,46 +93,55 @@ const DynamicMap = ({
           const newPos = { lat: parseFloat(lat), lng: parseFloat(lon) };
           setPosition(newPos);
           onPositionChange?.(newPos);
+          lastAddressRef.current = address;
         }
       } catch (err) {
         console.error("Geocoding error:", err);
       }
+    }, 800); // زود وقت الـ debounce
+
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
     };
-
-    fetchCoordinates();
-  }, [address]);
-
-  useEffect(() => {
-    setPosition(initialPosition);
-  }, [initialPosition]);
+  }, [address, onPositionChange]);
 
   const handleMapClick = async (lat: number, lng: number) => {
     const newPos = { lat, lng };
     setPosition(newPos);
     onPositionChange?.(newPos);
 
-    try {
-      const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=ar`;
-      const res = await fetch(url, {
-        headers: {
-          "User-Agent": "eco-revival-app",
-        },
-      });
-      const data = await res.json();
-      if (data?.display_name) {
-        onAddressChange?.(data.display_name);
-      }
-    } catch (err) {
-      console.error("Reverse geocoding error:", err);
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
     }
+
+    debounceTimeoutRef.current = setTimeout(async () => {
+      try {
+        const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=ar`;
+        const res = await fetch(url, {
+          headers: {
+            "User-Agent": "eco-revival-app",
+          },
+        });
+        const data = await res.json();
+        if (data?.display_name) {
+          isInternalUpdateRef.current = true; // علم أن التحديث من داخل المكون
+          onAddressChange?.(data.display_name);
+          lastAddressRef.current = data.display_name;
+        }
+      } catch (err) {
+        console.error("Reverse geocoding error:", err);
+      }
+    }, 500);
   };
 
   return (
     <MapContainer
-      center={[position.lat, position.lng]}
+      center={[initialPosition.lat, initialPosition.lng]}
       zoom={13}
-      style={{ height: "400px", width: "100%", margin: "10px 0", borderRadius: "8px" }}
-      key={`${position.lat}-${position.lng}`}
+      style={{ height: "400px", width: "100%", margin: "10px 0", borderRadius: "8px", zIndex: 0 }}
+      // أزل الـ key لتجنب re-mount
     >
       <TileLayer
         attribution="&copy; OpenStreetMap contributors"
@@ -108,9 +154,9 @@ const DynamicMap = ({
         </Popup>
       </Marker>
       <LocationMarker onMapClick={handleMapClick} isEditable={isEditable} />
+      <MapUpdater position={position} />
     </MapContainer>
   );
 };
 
 export default DynamicMap;
-

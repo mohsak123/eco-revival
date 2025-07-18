@@ -5,7 +5,6 @@ import { Link } from "react-router-dom";
 import type { JSX } from "react";
 
 
-
 interface Factory {
   name: string;
   materials: string;
