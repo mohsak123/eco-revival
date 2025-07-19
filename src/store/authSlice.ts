@@ -4,7 +4,6 @@ import axios from 'axios';
 
 const BASE_URL = import.meta.env.VITE_API_URL;
 
-// 🧾 أنواع البيانات
 interface User {
   id: string;
   username: string;
@@ -17,11 +16,31 @@ interface User {
   location?: string;
   lat?: number;
   lng?: number;
+  name: string,
+  record?: string,
+  url?: string,
+}
+
+interface UserCompany {
+  id: number,
+  username: string,
+  fullname?: string;
+  email: string,
+  phone: string,
+  name: string,
+  address?: string,
+  city?: string,
+  state?: string,
+  record?: string,
+  url?: string,
+  location?: string,
+  lat?: number,
+  lng?: number
 }
 
 
 interface AuthState {
-  user: User | null;
+  user: User | UserCompany | null;
   token: string | null;
   role: 'user' | 'admin';
   loading: boolean;
@@ -94,20 +113,23 @@ export const registerUser = createAsyncThunk<
 
 // ⏳ getProfile
 export const getProfile = createAsyncThunk<
-  User,
+  {user: User},
   void,
   { rejectValue: string }
 >('auth/getProfile', async (_, thunkAPI) => {
   try {
-    const token = localStorage.getItem('token');
-    const response = await axios.get(`${BASE_URL}/profile`, {
-      headers: { Authorization: `Bearer ${token}` },
+    const response = await axios.get(`${BASE_URL}/houdix/eco/user/me`, {
+      headers: { 
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+        "ngrok-skip-browser-warning": true 
+      },
     });
     return response.data;
   } catch (err: any) {
     return thunkAPI.rejectWithValue(err.response?.data?.message || 'Profile load failed');
   }
 });
+
 
 /* ----------- Company Api ----------- */
 
@@ -139,6 +161,24 @@ export const registerCompany = createAsyncThunk<
   }
 });
 
+// ⏳ getProfileCompany
+export const getProfileCompany = createAsyncThunk<
+  { factory: UserCompany },
+  void,
+  { rejectValue: string }
+>('auth/getProfileCompany', async (_, thunkAPI) => {
+  try {
+    const response = await axios.get(`${BASE_URL}/houdix/eco/factory/me`, {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('token')}`,
+      "ngrok-skip-browser-warning": true
+    },
+  });
+    return response.data;
+  } catch (err: any) {
+    return thunkAPI.rejectWithValue(err.response?.data?.message || 'Profile load failed');
+  }
+});
 
 
 // 🧠 Slice
@@ -210,7 +250,8 @@ const authSlice = createSlice({
       })
       .addCase(getProfile.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload;
+        state.user = action.payload.user;
+        localStorage.setItem('user', JSON.stringify(action.payload.user));
       })
       .addCase(getProfile.rejected, (state, action) => {
         state.loading = false;
@@ -234,7 +275,7 @@ const authSlice = createSlice({
         state.error = action.payload || "Login failed"
       })
 
-            // registerCompany
+      // registerCompany
       .addCase(registerCompany.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -243,6 +284,21 @@ const authSlice = createSlice({
         state.loading = false;
       })
       .addCase(registerCompany.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Register company failed';
+      })
+
+      // Profile Company
+      .addCase(getProfileCompany.pending, (state) => {
+        state.loading = true;
+        state.error= null;
+      })
+      .addCase(getProfileCompany.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload.factory;
+        localStorage.setItem('user', JSON.stringify(action.payload.factory));
+      })
+      .addCase(getProfileCompany.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Register company failed';
       })

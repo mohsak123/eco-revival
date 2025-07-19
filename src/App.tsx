@@ -15,13 +15,15 @@ import AdminOrders from './pages/admin/AdminOrders';
 import Delegates from './pages/admin/Delegates';
 import AdminHelp from './pages/admin/AdminHelp';
 import AdminAccount from './pages/admin/AdminAccount';
-import { Toaster } from "react-hot-toast";
+import toast, { Toaster } from "react-hot-toast";
 import PrivateRoutes from './utils/privateRoutes';
 import SingleFactory from './pages/SingleFactory';
 import PlaceOrder from './pages/PlaceOrder';
-import type { RootState } from './store/store';
-import { useEffect } from 'react';
+import type { AppDispatch, RootState } from './store/store';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useDispatch } from 'react-redux';
+import { getProfile, getProfileCompany } from './store/authSlice';
 
 const NotFound = () => (
   <div className='text-3xl text-red-500 flex items-center justify-center h-screen'>404 - Page Not Found</div>
@@ -30,10 +32,12 @@ const NotFound = () => (
 const App = () => {
   const { user, token } = useSelector((state: RootState) => state.auth);
   const role = localStorage.getItem("role") === "admin" ? "admin" : "user";
+  const [, setApiError] = useState<string | null>(null);
 
   const { i18n } = useTranslation();
 
-  // ✅ معالجة اللغة المحفوظة بشكل آمن
+  const dispatch = useDispatch<AppDispatch>();
+
   const supportedLangs = ["ar", "en"];
   let lan = localStorage.getItem("i18nextLng") || "en";
 
@@ -45,14 +49,39 @@ const App = () => {
   const isAuthenticated = !!(user && token);
 
   useEffect(() => {
-    // تغيير اتجاه الصفحة
     document.documentElement.dir = lan === 'ar' ? 'rtl' : 'ltr';
 
-    // تحميل اللغة إذا ما كانت مفعّلة
     if (i18n.language !== lan) {
       i18n.changeLanguage(lan);
     }
   }, [lan, i18n]);
+
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (role === "admin") {
+        const resultAction = await dispatch(getProfileCompany());
+
+        if (getProfileCompany.fulfilled.match(resultAction)) {
+        } else {
+          const errMsg = (resultAction.payload as string) || "Login failed";
+          setApiError(errMsg);
+          toast.error(errMsg);
+        }
+      } else {
+        const resultAction = await dispatch(getProfile());
+
+        if (getProfile.fulfilled.match(resultAction)) {
+        } else {
+          const errMsg = (resultAction.payload as string) || "Login failed";
+          setApiError(errMsg);
+          toast.error(errMsg);
+        }
+      }
+    };
+
+    fetchProfile();
+  }, [dispatch, role]);
 
   return (
     <>

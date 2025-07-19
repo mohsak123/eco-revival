@@ -1,34 +1,71 @@
-import { useState, type ChangeEvent } from "react";
+import { useState, useEffect, type ChangeEvent } from "react";
 import DynamicMap from "@/components/DynamicMap";
+import { useDispatch, useSelector } from "react-redux";
+import { getProfileCompany } from "@/store/authSlice";
+import type { AppDispatch, RootState } from "@/store/store";
+import toast from "react-hot-toast";
 
 const AdminAccount = () => {
   const [isEditing, setIsEditing] = useState(false);
+  const [mapEditable, setMapEditable] = useState(false);
+  const [position, setPosition] = useState({ lat: 0, lng: 0 });
+  const [, setApiError] = useState<string | null>(null);
+
+  const { user, loading } = useSelector((state: RootState) => state.auth);
+  const dispatch = useDispatch<AppDispatch>();
+
+  useEffect(() => {
+    const fetchCompanyProfile = async () => {
+      const result = await dispatch(getProfileCompany());
+
+      if (!getProfileCompany.fulfilled.match(result)) {
+        const errMsg = (result.payload as string) || "Failed to load profile";
+        setApiError(errMsg);
+        toast.error(errMsg);
+      }
+    };
+
+    fetchCompanyProfile();
+  }, [dispatch]);
 
   const [profileData, setProfileData] = useState({
-    username: "ecofactory_admin",
-    email: "admin@ecofactory.com",
-    location: "Industrial Zone, Green City", // مرتبط بالخريطة
-    phone: "+1 555-ECO-FACT",
-    address: "lattakia", // الحقل الجديد
+    username: "",
+    email: "",
+    name: "",
+    phone: "",
+    address: "",
+    city: "",
+    state: "",
+    lat: 0,
+    lng: 0,
+    location: "",
+    record: "",
+    url: "",
   });
 
-  const [profileImage, setProfileImage] = useState<File | null>(null);
-  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
-  const [mapEditable, setMapEditable] = useState(false);
-  const [position, setPosition] = useState({ lat: 35.52, lng: 35.8 });
+  useEffect(() => {
+    if (user) {
+      setProfileData({
+        username: user.username || "",
+        email: user.email || "",
+        name: user.name || "",
+        phone: user.phone || "",
+        address: user.address || "",
+        city: user.city || "",
+        state: user.state || "",
+        lat: user.lat || 0,
+        lng: user.lng || 0,
+        location: user.location || "",
+        record: user.record || "",
+        url: user.url || "",
+      });
 
-  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setProfileImage(file);
-      setProfileImageUrl(URL.createObjectURL(file));
+      setPosition({
+        lat: user.lat || 0,
+        lng: user.lng || 0,
+      });
     }
-  };
-
-  const handleRemoveImage = () => {
-    setProfileImage(null);
-    setProfileImageUrl(null);
-  };
+  }, [user]);
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -38,79 +75,55 @@ const AdminAccount = () => {
     }));
   };
 
+  const handlePositionChange = (pos: { lat: number; lng: number }) => {
+    if (mapEditable) {
+      setPosition(pos);
+      setProfileData((prev) => ({
+        ...prev,
+        lat: pos.lat,
+        lng: pos.lng,
+      }));
+    }
+  };
+
+  const handleAddressChange = (addr: string) => {
+    if (mapEditable) {
+      setProfileData((prev) => ({
+        ...prev,
+        location: addr,
+      }));
+    }
+  };
+
   const handleEditSave = () => {
     if (isEditing) {
-      console.log("Saving profile data:", profileData);
-      if (profileImage) {
-        console.log("New profile image file:", profileImage);
-      }
+      console.log("Saving company profile:", profileData);
     }
     setIsEditing(!isEditing);
     setMapEditable(false);
   };
 
-  const initials = profileData.username
-    .split("_")
-    .map((word) => word.charAt(0).toUpperCase())
-    .join("");
-
   return (
     <div id="accountPage" className="page-content">
-      <h2 className="text-3xl font-bold text-gray-800 mb-6">My Account</h2>
+      <h2 className="text-3xl font-bold text-gray-800 mb-6">Company Profile</h2>
 
       <div className="bg-white rounded-lg shadow-md p-8">
         <div className="flex items-center mb-2">
           <div className="w-24 h-24 rounded-full flex items-center justify-center mr-6 bg-[#bbf7d0] relative">
-            {profileImageUrl ? (
-              <>
-                <img
-                  src={profileImageUrl}
-                  alt="Profile"
-                  className="w-full h-full object-cover rounded-full"
-                />
-                {isEditing && (
-                  <button
-                    onClick={handleRemoveImage}
-                    className="absolute bottom-1 right-1 bg-red-500 rounded-full w-6 h-6 flex items-center justify-center text-white font-bold hover:bg-red-600 transition"
-                    title="Remove image"
-                    type="button"
-                  >
-                    ×
-                  </button>
-                )}
-              </>
-            ) : (
-              <span className="text-3xl font-bold text-[#166534]">{initials}</span>
+            {profileData.name && (
+              <span className="text-3xl font-bold text-[#166534]">
+                {profileData.name.charAt(0).toUpperCase()}
+              </span>
             )}
           </div>
           <div>
-            <h3 className="text-2xl font-semibold text-gray-800">EcoFactory Ltd.</h3>
-            <p className="text-gray-600">Factory Owner</p>
-
-            {isEditing && (
-              <label
-                htmlFor="image-upload"
-                className="mt-2 inline-block cursor-pointer text-sm text-[#4ade80] hover:text-[#16a34a] font-semibold"
-                title="Change Profile Picture"
-              >
-                Change Picture
-                <input
-                  id="image-upload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="hidden"
-                />
-              </label>
-            )}
+            <h3 className="text-2xl font-semibold text-gray-800">{profileData.name}</h3>
+            <p className="text-gray-600">Company Account</p>
           </div>
         </div>
 
-        {/* <div className=" mt-6"> */}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
-
-            {/* بقية الحقول */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
+          {/* Username */}
           <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700">Username</label>
             {isEditing ? (
@@ -122,10 +135,11 @@ const AdminAccount = () => {
                 className="w-full p-3 rounded-lg border border-gray-300"
               />
             ) : (
-              <p className="text-gray-900 bg-gray-50 p-3 rounded-lg">{profileData.username}</p>
+              <p className="bg-gray-50 p-3 rounded-lg">{profileData.username}</p>
             )}
           </div>
 
+          {/* Email */}
           <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700">Email</label>
             {isEditing ? (
@@ -137,12 +151,13 @@ const AdminAccount = () => {
                 className="w-full p-3 rounded-lg border border-gray-300"
               />
             ) : (
-              <p className="text-gray-900 bg-gray-50 p-3 rounded-lg">{profileData.email}</p>
+              <p className="bg-gray-50 p-3 rounded-lg">{profileData.email}</p>
             )}
           </div>
 
+          {/* Phone */}
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Phone Number</label>
+            <label className="block text-sm font-medium text-gray-700">Phone</label>
             {isEditing ? (
               <input
                 type="tel"
@@ -152,15 +167,45 @@ const AdminAccount = () => {
                 className="w-full p-3 rounded-lg border border-gray-300"
               />
             ) : (
-              <p className="text-gray-900 bg-gray-50 p-3 rounded-lg">{profileData.phone}</p>
+              <p className="bg-gray-50 p-3 rounded-lg">{profileData.phone}</p>
             )}
           </div>
 
+          {/* Commercial Record */}
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-700">Commercial Record</label>
+            {isEditing ? (
+              <input
+                type="text"
+                name="record"
+                value={profileData.record}
+                onChange={handleInputChange}
+                className="w-full p-3 rounded-lg border border-gray-300"
+              />
+            ) : (
+              <p className="bg-gray-50 p-3 rounded-lg">{profileData.record}</p>
+            )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Website */}
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-700">Website</label>
+            {isEditing ? (
+              <input
+                type="text"
+                name="url"
+                value={profileData.url}
+                onChange={handleInputChange}
+                className="w-full p-3 rounded-lg border border-gray-300"
+              />
+            ) : (
+              <p className="bg-gray-50 p-3 rounded-lg">{profileData.url}</p>
+            )}
+          </div>
+        </div>
 
-                      {/* Location field + map */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Location + Map */}
           <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700">Location</label>
             {isEditing ? (
@@ -187,21 +232,17 @@ const AdminAccount = () => {
                 <DynamicMap
                   address={profileData.location}
                   initialPosition={position}
-                  onPositionChange={(pos) => {
-                    if (mapEditable) setPosition(pos);
-                  }}
-                  onAddressChange={(addr) => {
-                    if (mapEditable) setProfileData((prev) => ({ ...prev, location: addr }));
-                  }}
+                  onPositionChange={handlePositionChange}
+                  onAddressChange={handleAddressChange}
                   isEditable={mapEditable}
                 />
               </>
             ) : (
-              <p className="text-gray-900 bg-gray-50 p-3 rounded-lg">{profileData.location}</p>
+              <p className="bg-gray-50 p-3 rounded-lg">{profileData.location}</p>
             )}
           </div>
 
-          {/* Address field جنب الـ Location */}
+          {/* Address */}
           <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700">Address</label>
             {isEditing ? (
@@ -211,15 +252,11 @@ const AdminAccount = () => {
                 value={profileData.address}
                 onChange={handleInputChange}
                 className="w-full p-3 rounded-lg border border-gray-300"
-                placeholder="Enter additional address info"
               />
             ) : (
-              <p className="text-gray-900 bg-gray-50 p-3 rounded-lg">{profileData.address}</p>
+              <p className="bg-gray-50 p-3 rounded-lg">{profileData.address}</p>
             )}
           </div>
-
-          </div>
-
         </div>
 
         <div className="mt-8">
@@ -233,7 +270,7 @@ const AdminAccount = () => {
           </button>
         </div>
       </div>
-    // </div>
+    </div>
   );
 };
 

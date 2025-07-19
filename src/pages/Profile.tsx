@@ -1,34 +1,79 @@
-import { useState, type ChangeEvent } from "react";
+import { useState, type ChangeEvent, useEffect } from "react";
 import DynamicMap from "@/components/DynamicMap";
+import { useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
+import { getProfile } from "@/store/authSlice";
+import type { AppDispatch, RootState } from "@/store/store";
+import toast from "react-hot-toast";
 
 const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [mapEditable, setMapEditable] = useState(false);
   const [position, setPosition] = useState({ lat: 35.52, lng: 35.8 });
+  const [, setApiError] = useState<string | null>(null);
+
+  const { user, loading } = useSelector((state: RootState) => state.auth);
+
+  const dispatch = useDispatch<AppDispatch>();
+  const role = localStorage.getItem("role");
+
+  useEffect(() => {
+    const getPro = async() => {
+      if (role === "user") {
+        const resultAction = await dispatch(
+          getProfile()
+        );
+
+        if (getProfile.fulfilled.match(resultAction)) {
+          
+        } else {
+          const errMsg = (resultAction.payload as string) || "Login failed";
+          setApiError(errMsg);
+          toast.error(errMsg);
+        }
+      }
+    }
+
+    getPro();
+  }, [dispatch, role]);
+
 
   const [profileData, setProfileData] = useState({
-    username: "ecofactory_admin",
-    email: "admin@ecofactory.com",
-    location: "Industrial Zone, Green City", // مرتبط بالخريطة
-    address: "lattakia", // الحقل الجديد جنب الـ location
-    phone: "+1 555-ECO-FACT",
+    username: "",
+    email: "",
+    fullname: "", // 🔥 أضفناه هون
+    location: "",
+    address: "",
+    phone: "",
+    city: "",
+    state: "",
+    lat: 0,
+    lng: 0,
   });
 
-  const [profileImage, setProfileImage] = useState<File | null>(null);
-  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
 
-  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setProfileImage(file);
-      setProfileImageUrl(URL.createObjectURL(file));
+
+  useEffect(() => {
+    if (user) {
+      setProfileData({
+        username: user.username || "",
+        email: user.email || "",
+        fullname: user.fullname || "", // 🔥 أضفناه هون كمان
+        location: user.location || "",
+        address: user.address || "",
+        phone: user.phone || "",
+        city: user.city || "",
+        state: user.state || "",
+        lat: user.lat || 0,
+        lng: user.lng || 0,
+      });
+      setPosition({
+        lat: user.lat || 0,
+        lng: user.lng || 0,
+      });
     }
-  };
+  }, [user]);
 
-  const handleRemoveImage = () => {
-    setProfileImage(null);
-    setProfileImageUrl(null);
-  };
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -38,21 +83,33 @@ const Profile = () => {
     }));
   };
 
+  const handlePositionChange = (pos: { lat: number; lng: number }) => {
+    if (mapEditable) {
+      setPosition(pos);
+      setProfileData((prev) => ({
+        ...prev,
+        lat: pos.lat,
+        lng: pos.lng,
+      }));
+    }
+  };
+
+  const handleAddressChange = (addr: string) => {
+    if (mapEditable) {
+      setProfileData((prev) => ({
+        ...prev,
+        location: addr,
+      }));
+    }
+  };
+
   const handleEditSave = () => {
     if (isEditing) {
       console.log("Saving profile data:", profileData);
-      if (profileImage) {
-        console.log("New profile image file:", profileImage);
-      }
     }
     setIsEditing(!isEditing);
     setMapEditable(false);
   };
-
-  const initials = profileData.username
-    .split("_")
-    .map((word) => word.charAt(0).toUpperCase())
-    .join("");
 
   return (
     <div id="accountPage" className="page-content">
@@ -61,55 +118,16 @@ const Profile = () => {
       <div className="bg-white rounded-lg shadow-md p-8">
         <div className="flex items-center mb-2">
           <div className="w-24 h-24 rounded-full flex items-center justify-center mr-6 bg-[#bbf7d0] relative">
-            {profileImageUrl ? (
-              <>
-                <img
-                  src={profileImageUrl}
-                  alt="Profile"
-                  className="w-full h-full object-cover rounded-full"
-                />
-                {isEditing && (
-                  <button
-                    onClick={handleRemoveImage}
-                    className="absolute bottom-1 right-1 bg-red-500 rounded-full w-6 h-6 flex items-center justify-center text-white font-bold hover:bg-red-600 transition"
-                    title="Remove image"
-                    type="button"
-                  >
-                    ×
-                  </button>
-                )}
-              </>
-            ) : (
-              <span className="text-3xl font-bold text-[#166534]">{initials}</span>
-            )}
+            {user?.fullname && <span className="text-3xl font-bold text-[#166534]">{user?.fullname?.charAt(0).toUpperCase()}</span>}
           </div>
           <div>
-            <h3 className="text-2xl font-semibold text-gray-800">Mohammed</h3>
-
-            {isEditing && (
-              <label
-                htmlFor="image-upload"
-                className="mt-2 inline-block cursor-pointer text-sm text-[#4ade80] hover:text-[#16a34a] font-semibold"
-                title="Change Profile Picture"
-              >
-                Change Picture
-                <input
-                  id="image-upload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="hidden"
-                />
-              </label>
-            )}
+            <h3 className="text-2xl font-semibold text-gray-800">{profileData.fullname}</h3>
+            {/* تغيير الصورة لو بدك */}
           </div>
         </div>
 
-        {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6"> */}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
-
-            {/* Username */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
+          {/* Username */}
           <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700">Username</label>
             {isEditing ? (
@@ -156,11 +174,10 @@ const Profile = () => {
               <p className="text-gray-900 bg-gray-50 p-3 rounded-lg">{profileData.phone}</p>
             )}
           </div>
+        </div>
 
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Location + map */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Location + map */}
           <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700">Location</label>
             {isEditing ? (
@@ -184,20 +201,19 @@ const Profile = () => {
                     {mapEditable ? "Confirm" : "Edit"}
                   </button>
                 </div>
+
                 <DynamicMap
                   address={profileData.location}
                   initialPosition={position}
-                  onPositionChange={(pos) => {
-                    if (mapEditable) setPosition(pos);
-                  }}
-                  onAddressChange={(addr) => {
-                    if (mapEditable) setProfileData((prev) => ({ ...prev, location: addr }));
-                  }}
+                  onPositionChange={handlePositionChange}
+                  onAddressChange={handleAddressChange}
                   isEditable={mapEditable}
                 />
               </>
             ) : (
-              <p className="text-gray-900 bg-gray-50 p-3 rounded-lg">{profileData.location}</p>
+              <div className="bg-gray-50 p-3 rounded-lg text-gray-900 space-y-1">
+                <p className="text-gray-900 bg-gray-50 p-3 rounded-lg">{profileData.location}</p>
+              </div>
             )}
           </div>
 
@@ -217,9 +233,6 @@ const Profile = () => {
               <p className="text-gray-900 bg-gray-50 p-3 rounded-lg">{profileData.address}</p>
             )}
           </div>
-          </div>
-
-          
         </div>
 
         <div className="mt-8">
@@ -233,7 +246,7 @@ const Profile = () => {
           </button>
         </div>
       </div>
-    // </div>
+    </div>
   );
 };
 
