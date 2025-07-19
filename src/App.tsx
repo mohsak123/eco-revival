@@ -20,6 +20,8 @@ import PrivateRoutes from './utils/privateRoutes';
 import SingleFactory from './pages/SingleFactory';
 import PlaceOrder from './pages/PlaceOrder';
 import type { RootState } from './store/store';
+import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const NotFound = () => (
   <div className='text-3xl text-red-500 flex items-center justify-center h-screen'>404 - Page Not Found</div>
@@ -27,10 +29,30 @@ const NotFound = () => (
 
 const App = () => {
   const { user, token } = useSelector((state: RootState) => state.auth);
-  
   const role = localStorage.getItem("role") === "admin" ? "admin" : "user";
-  
+
+  const { i18n } = useTranslation();
+
+  // ✅ معالجة اللغة المحفوظة بشكل آمن
+  const supportedLangs = ["ar", "en"];
+  let lan = localStorage.getItem("i18nextLng") || "en";
+
+  if (!supportedLangs.includes(lan)) {
+    lan = "en";
+    localStorage.setItem("i18nextLng", "en");
+  }
+
   const isAuthenticated = !!(user && token);
+
+  useEffect(() => {
+    // تغيير اتجاه الصفحة
+    document.documentElement.dir = lan === 'ar' ? 'rtl' : 'ltr';
+
+    // تحميل اللغة إذا ما كانت مفعّلة
+    if (i18n.language !== lan) {
+      i18n.changeLanguage(lan);
+    }
+  }, [lan, i18n]);
 
   return (
     <>

@@ -8,6 +8,7 @@ import { BsPerson } from "react-icons/bs";
 import Footer from "@/components/Footer";
 import { useState } from "react";
 import LogoutConfirmDialog from "@/components/modals/LogoutConfirmDialog";
+import { t } from "i18next";
 
 
 const Layout = ({ role }: { role: "user" | "admin" }) => {
@@ -135,7 +136,7 @@ const SidebarContent = ({ role }: { role: "user" | "admin" }) => {
           className="w-full flex items-center cursor-pointer space-x-3 px-4 py-3 text-left text-red-600 hover:bg-red-50 rounded-lg transition duration-200"
         >
           <LogOut />
-          <span>Logout</span>
+          <span>{t('logout')}</span>
         </button>
       </div>
 

@@ -22,6 +22,7 @@ import {
 import { useDispatch } from "react-redux";
 import { registerCompany, registerUser } from "@/store/authSlice";
 import type { AppDispatch } from "@/store/store";
+import { useTranslation } from 'react-i18next';
 
 type Position = {
   lat: number;
@@ -167,84 +168,93 @@ const Register = () => {
   const handleEditLocation = () => setIsEditingLocation(true);
   const handleConfirmLocation = () => setIsEditingLocation(false);
 
+  const { t, i18n } = useTranslation();
+  const isArabic = i18n.language === 'ar';
+
   return (
-    <div className="py-8 min-h-screen flex items-center justify-center bg-gradient-to-br from-[#86efac] to-white">
+    <div className="py-8 min-h-screen flex items-center justify-center bg-gradient-to-br from-[#86efac] to-white"
+      dir={isArabic ? 'rtl' : 'ltr'}
+      style={{ textAlign: isArabic ? 'right' : 'left' }}
+    >
       <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md fade-in">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-eco-gray mb-2 flex items-center justify-center gap-1">
             <img src="/images/logo.jpg" alt="" className="w-[70px] h-[70px] object-cover" /> 
-            Join Eco-Revival
+            {t('app_name')}
           </h1>
-          <p className="text-eco-gray">Create your account</p>
+          <p className="text-eco-gray">{t('app_name')}</p>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="user">User</TabsTrigger>
-            <TabsTrigger value="company">Company</TabsTrigger>
+            <TabsTrigger value="user">{t('user')}</TabsTrigger>
+            <TabsTrigger value="company">{t('company')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="user" className="mt-6">
             <Card>
               <CardHeader>
-                <CardTitle>User Registration</CardTitle>
+                <CardTitle>{t('user_register')}</CardTitle>
                 <CardDescription>
-                  Register as a regular user to access our platform
+                  {t('user_register_desc')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+                <form onSubmit={handleSubmit} className="space-y-4" noValidate
+                  dir={isArabic ? 'rtl' : 'ltr'}
+                  style={{ textAlign: isArabic ? 'right' : 'left' }}
+                >
                   <div className="grid gap-2">
-                    <Label htmlFor="user-username">Username</Label>
+                    <Label htmlFor="user-username">{t('username')}</Label>
                     <Input
                       id="user-username"
                       name="username"
-                      placeholder="Username"
+                      placeholder={t('username')}
                       value={userFormData.username}
                       onChange={handleUserChange}
                     />
                   </div>
 
                   <div className="grid gap-2">
-                    <Label htmlFor="user-fullname">Full Name</Label>
+                    <Label htmlFor="user-fullname">{t('full_name')}</Label>
                     <Input
                       id="user-fullname"
                       name="fullname"
-                      placeholder="Full Name"
+                      placeholder={t('full_name')}
                       value={userFormData.fullname}
                       onChange={handleUserChange}
                     />
                   </div>
 
                   <div className="grid gap-2">
-                    <Label htmlFor="user-email">Email</Label>
+                    <Label htmlFor="user-email">{t('email')}</Label>
                     <Input
                       id="user-email"
                       name="email"
                       type="email"
-                      placeholder="Email"
+                      placeholder={t('email')}
                       value={userFormData.email}
                       onChange={handleUserChange}
                     />
                   </div>
 
                   <div className="grid gap-2">
-                    <Label htmlFor="user-phone">Phone Number</Label>
+                    <Label htmlFor="user-phone">{t('phone')}</Label>
                     <Input
                       id="user-phone"
                       name="phone"
                       type="tel"
-                      placeholder="Phone Number"
+                      placeholder={t('phone')}
                       value={userFormData.phone}
                       onChange={handleUserChange}
                     />
                   </div>
 
                   <div className="grid gap-2">
-                    <Label htmlFor="user-location">Location</Label>
+                    <Label htmlFor="user-location">{t('location')}</Label>
                     <Input
                       id="user-location"
-                      name="location"
+                      name={t('location')}
                       value={locationText}
                       onChange={(e) => setLocationText(e.target.value)}
                       placeholder="e.g., Latakia, Syria"
@@ -263,49 +273,49 @@ const Register = () => {
                   <Button
                     type="button"
                     onClick={isEditingLocation ? handleConfirmLocation : handleEditLocation}
-                    className="w-full"
+                    className="w-full cursor-pointer"
                     variant={isEditingLocation ? "default" : "outline"}
                   >
-                    {isEditingLocation ? "Confirm Location" : "Edit Location"}
+                    {isEditingLocation ? t('confirm_location') : t('edit_location')}
                   </Button>
 
                   <div className="grid gap-2">
-                    <Label htmlFor="user-address">Full Address</Label>
+                    <Label htmlFor="user-address">{t('address')}</Label>
                     <Input
                       id="user-address"
                       name="address"
-                      placeholder="Full Address"
+                      placeholder={t('address')}
                       value={userFormData.address}
                       onChange={handleUserChange}
                     />
                   </div>
 
                   <div className="grid gap-2">
-                    <Label htmlFor="user-password">Password</Label>
+                    <Label htmlFor="user-password">{t('password')}</Label>
                     <Input
                       id="user-password"
                       name="password"
                       type="password"
-                      placeholder="Password"
+                      placeholder={t('password')}
                       value={userFormData.password}
                       onChange={handleUserChange}
                     />
                   </div>
 
                   <div className="grid gap-2">
-                    <Label htmlFor="user-confirm-password">Confirm Password</Label>
+                    <Label htmlFor="user-confirm-password">{t('confirm_password')}</Label>
                     <Input
                       id="user-confirm-password"
                       name="confirmPassword"
                       type="password"
-                      placeholder="Confirm Password"
+                      placeholder={t('confirm_password')}
                       value={userFormData.confirmPassword}
                       onChange={handleUserChange}
                     />
                   </div>
 
-                  <Button type="submit" className="w-full bg-[#86efac] hover:bg-[#4ade80]">
-                    Sign Up as User
+                  <Button type="submit" className="w-full hover:bg-[#86efac] bg-[#4ade80] cursor-pointer">
+                    {t('signup_user')}
                   </Button>
                 </form>
               </CardContent>
@@ -315,86 +325,89 @@ const Register = () => {
           <TabsContent value="company" className="mt-6">
             <Card>
               <CardHeader>
-                <CardTitle>Company Registration</CardTitle>
+                <CardTitle>{t('company_register')}</CardTitle>
                 <CardDescription>
-                  Register your company to access business features
+                  {t('company_register_desc')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+                <form onSubmit={handleSubmit} className="space-y-4" noValidate
+                  dir={isArabic ? 'rtl' : 'ltr'}
+                  style={{ textAlign: isArabic ? 'right' : 'left' }}
+                >
                   <div className="grid gap-2">
-                    <Label htmlFor="company-username">Username</Label>
+                    <Label htmlFor="company-username">{t('username')}</Label>
                     <Input
                       id="company-username"
                       name="username"
-                      placeholder="Username"
+                      placeholder={t('username')}
                       value={companyFormData.username}
                       onChange={handleCompanyChange}
                     />
                   </div>
 
                   <div className="grid gap-2">
-                    <Label htmlFor="company-name">Company Name</Label>
+                    <Label htmlFor="company-name">{t('company_title')}</Label>
                     <Input
                       id="company-name"
                       name="name"
-                      placeholder="Company/Factory Name"
+                      placeholder={t('company_title')}
                       value={companyFormData.name}
                       onChange={handleCompanyChange}
                     />
                   </div>
 
                   <div className="grid gap-2">
-                    <Label htmlFor="company-record">Commercial Record</Label>
+                    <Label htmlFor="company-record">{t('record')}</Label>
                     <Input
                       id="company-record"
                       name="record"
-                      placeholder="Commercial Record"
+                      placeholder={t('record')}
                       value={companyFormData.record}
                       onChange={handleCompanyChange}
                     />
                   </div>
 
                   <div className="grid gap-2">
-                    <Label htmlFor="company-url">Website URL</Label>
+                    <Label htmlFor="company-url">{t('website')}</Label>
                     <Input
                       id="company-url"
                       name="url"
-                      placeholder="Website URL (optional)"
+                      placeholder={t('website')}
                       value={companyFormData.url}
                       onChange={handleCompanyChange}
                     />
                   </div>
 
                   <div className="grid gap-2">
-                    <Label htmlFor="company-email">Email</Label>
+                    <Label htmlFor="company-email">{t('email')}</Label>
                     <Input
                       id="company-email"
                       name="email"
                       type="email"
-                      placeholder="Email"
+                      placeholder={t('email')}
                       value={companyFormData.email}
                       onChange={handleCompanyChange}
                     />
                   </div>
 
                   <div className="grid gap-2">
-                    <Label htmlFor="company-phone">Phone Number</Label>
+                    <Label htmlFor="company-phone">{t('phone')}</Label>
                     <Input
                       id="company-phone"
                       name="phone"
                       type="tel"
-                      placeholder="Phone Number"
+                      placeholder={t('phone')}
                       value={companyFormData.phone}
                       onChange={handleCompanyChange}
                     />
                   </div>
 
                   <div className="grid gap-2">
-                    <Label htmlFor="company-location">Location</Label>
+                    <Label htmlFor="company-location">{t('location')}</Label>
                     <Input
                       id="company-location"
-                      name="location"
+                      name={t('location')}
                       value={locationText}
                       onChange={(e) => setLocationText(e.target.value)}
                       placeholder="e.g., Latakia, Syria"
@@ -413,37 +426,37 @@ const Register = () => {
                   <Button
                     type="button"
                     onClick={isEditingLocation ? handleConfirmLocation : handleEditLocation}
-                    className="w-full"
+                    className="w-full cursor-pointer"
                     variant={isEditingLocation ? "default" : "outline"}
                   >
-                    {isEditingLocation ? "Confirm Location" : "Edit Location"}
+                    {isEditingLocation ? t('confirm_location') : t('edit_location')}
                   </Button>
 
                   <div className="grid gap-2">
-                    <Label htmlFor="company-address">Full Address</Label>
+                    <Label htmlFor="company-address">{t('address')}</Label>
                     <Input
                       id="company-address"
                       name="address"
-                      placeholder="Full Address"
+                      placeholder={t('address')}
                       value={companyFormData.address}
                       onChange={handleCompanyChange}
                     />
                   </div>
 
                   <div className="grid gap-2">
-                    <Label htmlFor="company-password">Password</Label>
+                    <Label htmlFor="company-password">{t('password')}</Label>
                     <Input
                       id="company-password"
                       name="password"
                       type="password"
-                      placeholder="Password"
+                      placeholder={t('password')}
                       value={companyFormData.password}
                       onChange={handleCompanyChange}
                     />
                   </div>
 
-                  <Button type="submit" className="w-full bg-[#86efac] hover:bg-[#4ade80]">
-                    Sign Up as Company
+                  <Button type="submit" className="w-full hover:bg-[#86efac] bg-[#4ade80] cursor-pointer">
+                    {t('signup_company')}
                   </Button>
                 </form>
               </CardContent>
@@ -452,9 +465,9 @@ const Register = () => {
         </Tabs>
 
         <p className="text-center mt-6 text-eco-gray">
-          Already have an account?{' '}
+          {t('have_account')}{' '}
           <Link to="/login" className="text-[#4ade80] hover:underline font-medium cursor-pointer">
-            Login
+            {t('login')}
           </Link>
         </p>
       </div>

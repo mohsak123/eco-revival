@@ -7,6 +7,7 @@ import { loginUser, loginCompany, setRole } from "@/store/authSlice";
 import type { AppDispatch } from "@/store/store";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 
 // 1. تعريف schema باستخدام zod
 const loginSchema = z.object({
@@ -83,27 +84,29 @@ const Login = () => {
     }
   };
 
+  const { t } = useTranslation();
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#86efac] to-white">
       <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md fade-in">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-eco-gray mb-2 flex items-center justify-center gap-1">
             <img src="/images/logo.jpg" alt="" className="w-[70px] h-[70px] object-cover" />
-            Eco-Revival
+            {t('app_name')}
           </h1>
-          <p className="text-eco-gray">Sustainable Recycling Platform</p>
+          <p className="text-eco-gray">{t('app_desc')}</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
           <div>
-            <label className="block text-eco-gray font-medium mb-2">Username</label>
+            <label className="block text-eco-gray font-medium mb-2">{t('username')}</label>
             <input
               type="text"
               {...register("username")}
               className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#86efac] focus:border-transparent
                 ${errors.username ? "border-red-500 focus:ring-red-500" : ""}
               `}
-              placeholder="user name"
+              placeholder={t('username')}
               disabled={loading}
             />
             {errors.username && (
@@ -112,14 +115,14 @@ const Login = () => {
           </div>
 
           <div>
-            <label className="block text-eco-gray font-medium mb-2">Password</label>
+            <label className="block text-eco-gray font-medium mb-2">{t('password')}</label>
             <input
               type="password"
               {...register("password")}
               className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#86efac] focus:border-transparent
                 ${errors.password ? "border-red-500 focus:ring-red-500" : ""}
               `}
-              placeholder="password"
+              placeholder={t('password')}
               disabled={loading}
             />
             {errors.password && (
@@ -137,7 +140,7 @@ const Login = () => {
               disabled={loading}
             />
             <label htmlFor="weAreCompany" className="text-eco-gray font-medium cursor-pointer select-none">
-              WeAreCompany
+              {t('company_name')}
             </label>
           </div>
 
@@ -146,17 +149,17 @@ const Login = () => {
             className="w-full hover:bg-[#86efac] cursor-pointer bg-[#4ade80] text-white font-semibold py-3 rounded-lg transition duration-200 disabled:opacity-50"
             disabled={loading}
           >
-            {loading ? "Logging in..." : "Login"}
+            {loading ? "Logging in..." : t('login')}
           </button>
         </form>
 
         <p className="text-center mt-6 text-eco-gray">
-          Don't have an account?{" "}
+          {t('no_account')}{" "}
           <Link
             to="/register"
             className="text-[#4ade80] cursor-pointer hover:underline font-medium"
           >
-            Sign up
+            {t('signup')}
           </Link>
         </p>
       </div>
