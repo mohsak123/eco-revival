@@ -7,84 +7,116 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useAppDispatch } from "@/store/hooks"; 
+import { editDelegate } from "@/store/factory/factorySlice";
+import DynamicMap from "@/components/DynamicMap";
+import toast from "react-hot-toast"; // استيراد التوست
 
 interface Delegate {
-  id: string;
-  name: string;
-  phone: string;
+  id: number;
+  fullname: string;
+  number: string;
   location: string;
-  status: string;
-  initials: string;
-  bg: string;
-  text: string;
+  address: string;
+  lat: number;
+  lng: number;
+  factory_id: number;
+  updatedAt: string;
+  createdAt: string;
 }
 
 interface EditDelegateDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   delegate: Delegate | null;
-  onSave: (updatedDelegate: Delegate) => void;
 }
 
 const EditDelegateDialog: React.FC<EditDelegateDialogProps> = ({
   open,
   onOpenChange,
   delegate,
-  onSave,
 }) => {
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
+  const dispatch = useAppDispatch();
+
+  const [fullname, setFullname] = useState("");
+  const [number, setNumber] = useState("");
   const [location, setLocation] = useState("");
-  const [status, setStatus] = useState("");
+  const [address, setAddress] = useState("");
+  const [lat, setLat] = useState(35.52);
+  const [lng, setLng] = useState(35.8);
 
   useEffect(() => {
     if (delegate) {
-      setName(delegate.name);
-      setPhone(delegate.phone);
+      setFullname(delegate.fullname);
+      setNumber(delegate.number);
       setLocation(delegate.location);
-      setStatus(delegate.status);
+      setAddress(delegate.address);
+      setLat(delegate.lat);
+      setLng(delegate.lng);
     }
   }, [delegate]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!delegate) return;
 
-    onSave({
-      ...delegate,
-      name,
-      phone,
-      location,
-      status,
-    });
-    onOpenChange(false);
+    const resultAction = await dispatch(
+      editDelegate({
+        id: delegate.id,
+        data: {
+          fullname,
+          number,
+          location,
+          address,
+          lat,
+          lng,
+        },
+      })
+    );
+
+    if (editDelegate.fulfilled.match(resultAction)) {
+      toast.success("Delegate updated successfully");  // نجاح العملية
+      onOpenChange(false);
+    } else {
+      toast.error("Failed to update delegate");       // فشل العملية
+    }
+  };
+
+  // Handlers for DynamicMap changes
+  const handlePositionChange = (pos: { lat: number; lng: number }) => {
+    setLat(pos.lat);
+    setLng(pos.lng);
+  };
+
+  const handleAddressChange = (newAddress: string) => {
+    setLocation(newAddress);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md p-6">
+      <DialogContent className="max-w-md p-6 h-[80vh] overflow-auto">
         <DialogHeader>
           <DialogTitle>Edit Delegate</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block font-medium mb-1">Name</label>
+            <label className="block font-medium mb-1">Full Name</label>
             <input
               type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={fullname}
+              onChange={(e) => setFullname(e.target.value)}
               required
               className="w-full border px-3 py-2 rounded"
             />
           </div>
 
           <div>
-            <label className="block font-medium mb-1">Phone</label>
+            <label className="block font-medium mb-1">Phone Number</label>
             <input
               type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              value={number}
+              onChange={(e) => setNumber(e.target.value)}
               required
               className="w-full border px-3 py-2 rounded"
             />
@@ -102,20 +134,49 @@ const EditDelegateDialog: React.FC<EditDelegateDialogProps> = ({
           </div>
 
           <div>
-            <label className="block font-medium mb-1">Status</label>
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
+            <label className="block font-medium mb-1">Address</label>
+            <input
+              type="text"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
               required
               className="w-full border px-3 py-2 rounded"
-            >
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-            </select>
+            />
           </div>
 
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block font-medium mb-1">Latitude</label>
+              <input
+                type="number"
+                value={lat}
+                onChange={(e) => setLat(Number(e.target.value))}
+                required
+                className="w-full border px-3 py-2 rounded"
+              />
+            </div>
+            <div>
+              <label className="block font-medium mb-1">Longitude</label>
+              <input
+                type="number"
+                value={lng}
+                onChange={(e) => setLng(Number(e.target.value))}
+                required
+                className="w-full border px-3 py-2 rounded"
+              />
+            </div>
+          </div>
+
+          <DynamicMap
+            initialPosition={{ lat: Number(lat), lng: Number(lng) }}
+            address={location}
+            onPositionChange={handlePositionChange}
+            onAddressChange={handleAddressChange}
+            isEditable={true}
+          />
+
           <DialogFooter>
-            <Button type="submit" className="bg-green-500 hover:bg-green-600 text-white">
+            <Button type="submit" className="bg-green-600 hover:bg-green-700 text-white">
               Save Changes
             </Button>
             <Button
