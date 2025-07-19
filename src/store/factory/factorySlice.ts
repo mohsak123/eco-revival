@@ -16,10 +16,6 @@ interface Delegate {
   createdAt: string;
 }
 
-interface DataDelegateResponse {
-  delegate: Delegate[];
-}
-
 interface DelegateState {
   delegate: Delegate[];
   loading: boolean;
@@ -28,12 +24,12 @@ interface DelegateState {
 
 interface EditDelegatePayload {
   id: number;
-  data: Partial<Delegate>; // يمكن تمرير بعض أو كل الخصائص
+  data: Partial<Delegate>;
 }
 
 
 const initialState: DelegateState = {
-  delegate: [], // بدلاً من null
+  delegate: [],
   loading: false,
   error: null,
 };
@@ -119,8 +115,8 @@ export const editDelegate = createAsyncThunk<
 );
 
 export const deleteDelegate = createAsyncThunk<
-  number, // بنرجّع الـ ID المحذوف
-  number, // بندخل الـ ID فقط
+  number,
+  number,
   { rejectValue: string }
 >(
   'delegate/deleteDelegate',
@@ -132,7 +128,7 @@ export const deleteDelegate = createAsyncThunk<
           'ngrok-skip-browser-warning': true,
         },
       });
-      return id; // بنرجّع الـ ID حتى نحذف العنصر من الستيت
+      return id;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(
         error.response?.data?.message || 'Failed to delete delegate'
@@ -168,7 +164,7 @@ const delegateSlice = createSlice({
       })
       .addCase(createDelegate.fulfilled, (state, action) => {
         state.loading = false;
-        state.delegate.push(action.payload); // أضفناه للمصفوفة الحالية
+        state.delegate.push(action.payload);
       })
       .addCase(createDelegate.rejected, (state, action) => {
         state.loading = false;
@@ -181,7 +177,7 @@ const delegateSlice = createSlice({
       })
       .addCase(editDelegate.fulfilled, (state, action) => {
         state.loading = false;
-        const updated = action.payload.delegate; // 👈 خذ delegate من داخل الـ payload
+        const updated = action.payload.delegate;
         const index = state.delegate.findIndex(d => d.id === updated.id);
         if (index !== -1) {
           state.delegate[index] = updated;

@@ -7,69 +7,90 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
+import { useEffect } from "react";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { getMaterials } from "@/store/factory/materialsSlice";
+import { addPricing } from "@/store/factory/pricingSlice";
+
+interface Material {
+  id: number;
+  name: string;
+  name_en: string;
+  image: string;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 interface ProductModalProps {
   open: boolean;
   onOpenChange: (value: boolean) => void;
-  onAdd: (product: {
-    id: string;
-    name: string;
-    price: string;
-    unit: string;
-    image: File | null;
-    emoji: string;
-    bg: string;
-  }) => void;
+  onAdd?: (product: any) => void; // تقدر تلغي هذا لو مش ضروري
+  materials: Material[];
 }
 
-const ProductModal = ({ open, onOpenChange, onAdd }: ProductModalProps) => {
-  const [name, setName] = useState("");
+const ProductModal = ({ open, onOpenChange }: ProductModalProps) => {
+  const { t, i18n } = useTranslation();
+  const dispatch = useAppDispatch();
+
+  const { materials, loading } = useAppSelector((state) => state.materials);
+
+  useEffect(() => {
+    if (open) {
+      dispatch(getMaterials());
+    }
+  }, [open, dispatch]);
+
+  const [selectedMaterialId, setSelectedMaterialId] = useState<number | "">("");
   const [price, setPrice] = useState("");
   const [unit, setUnit] = useState("kg");
   const [image, setImage] = useState<File | null>(null);
 
   const [errors, setErrors] = useState({
-    name: "",
+    materialId: "",
     price: "",
     image: "",
   });
 
   const validate = () => {
     const newErrors = {
-      name: name.trim() === "" ? "Product name is required." : "",
-      price: price === "" || parseFloat(price) <= 0 ? "Price must be greater than 0." : "",
-      image: !image
-        ? "Product image is required."
-        : !image.type.startsWith("image/")
-        ? "Only image files are allowed."
-        : "",
+      materialId: selectedMaterialId === "" ? t("Product name is required.") : "",
+      price: price === "" || parseFloat(price) <= 0 ? t("Price must be greater than 0.") : "",
+      // image: !image
+      //   ? t("Product image is required.")
+      //   : !image.type.startsWith("image/")
+      //   ? t("Only image files are allowed.")
+      //   : "",
     };
     setErrors(newErrors);
-    return !newErrors.name && !newErrors.price && !newErrors.image;
+    return !newErrors.materialId && !newErrors.price 
+    // && !newErrors.image;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validate()) return;
 
-    const newProduct = {
-      id: Date.now().toString(),
-      name,
-      price,
-      unit,
-      image,
-      emoji: "📦", // يمكنك تغييره لاحقاً أو توليده تلقائياً
-      bg: "from-gray-200 to-gray-400", // يمكنك توليد ألوان عشوائية إذا بدك
-    };
+    try {
+      await dispatch(
+        addPricing({
+          material_id: selectedMaterialId as number,
+          price: parseFloat(price),
+          unit,
+        })
+      ).unwrap();
 
-    onAdd(newProduct);
-
-    // reset & close modal
-    setName("");
-    setPrice("");
-    setUnit("kg");
-    setImage(null);
-    setErrors({ name: "", price: "", image: "" });
-    onOpenChange(false);
+      // بعد الإضافة نرجع للحالات الافتراضية ونقفل المودال
+      setSelectedMaterialId("");
+      setPrice("");
+      setUnit("kg");
+      setImage(null);
+      setErrors({ materialId: "", price: "", image: "" });
+      onOpenChange(false);
+    } catch (error) {
+      // هنا ممكن تعرض خطأ للـ user
+      console.error("Failed to add pricing", error);
+    }
   };
 
   return (
@@ -77,28 +98,34 @@ const ProductModal = ({ open, onOpenChange, onAdd }: ProductModalProps) => {
       <DialogContent className="bg-white rounded-lg p-8 w-full max-w-md">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-gray-800 mb-4">
-            Add New Product
+            {t("Add New Product")}
           </DialogTitle>
         </DialogHeader>
         <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Product Name
+              {t("Product Name")}
             </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+            <select
+              value={selectedMaterialId}
+              onChange={(e) => setSelectedMaterialId(Number(e.target.value))}
               className={`w-full border ${
-                errors.name ? "border-red-500" : "border-gray-300"
+                errors.materialId ? "border-red-500" : "border-gray-300"
               } rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#4ade80]`}
-            />
-            {errors.name && <p className="text-sm text-red-500 mt-1">{errors.name}</p>}
+            >
+              <option value="">{t("Select a product")}</option>
+              {materials?.map((mat) => (
+                <option key={mat.id} value={mat.id}>
+                  {i18n.language === "en" && mat.name_en ? mat.name_en : mat.name}
+                </option>
+              ))}
+            </select>
+            {errors.materialId && <p className="text-sm text-red-500 mt-1">{errors.materialId}</p>}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Price
+              {t("Price")}
             </label>
             <input
               type="number"
@@ -112,9 +139,9 @@ const ProductModal = ({ open, onOpenChange, onAdd }: ProductModalProps) => {
             {errors.price && <p className="text-sm text-red-500 mt-1">{errors.price}</p>}
           </div>
 
-          <div>
+          {/* <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Product Image
+              {t("Product Image")}
             </label>
             <input
               type="file"
@@ -122,21 +149,21 @@ const ProductModal = ({ open, onOpenChange, onAdd }: ProductModalProps) => {
               onChange={(e) => setImage(e.target.files?.[0] || null)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#4ade80]"
             />
-            {image && <p className="text-sm text-gray-600 mt-1">Selected: {image.name}</p>}
+            {image && <p className="text-sm text-gray-600 mt-1">{t("Selected")}: {image.name}</p>}
             {errors.image && <p className="text-sm text-red-500 mt-1">{errors.image}</p>}
-          </div>
+          </div> */}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Pricing Unit
+              {t("Pricing Unit")}
             </label>
             <select
               value={unit}
               onChange={(e) => setUnit(e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#4ade80]"
             >
-              <option value="kg">per kilo</option>
-              <option value="piece">per piece</option>
+              <option value="kg">{t("per kilo")}</option>
+              <option value="piece">{t("per piece")}</option>
             </select>
           </div>
 
@@ -146,7 +173,7 @@ const ProductModal = ({ open, onOpenChange, onAdd }: ProductModalProps) => {
               onClick={handleSubmit}
               className="flex-1 bg-[#4ade80] hover:bg-[#16a34a] text-white cursor-pointer"
             >
-              Add
+              {t("Add")}
             </Button>
             <Button
               type="button"
@@ -154,7 +181,7 @@ const ProductModal = ({ open, onOpenChange, onAdd }: ProductModalProps) => {
               className="flex-1 bg-gray-500 hover:bg-gray-600 text-white cursor-pointer"
               onClick={() => onOpenChange(false)}
             >
-              Cancel
+              {t("Cancel")}
             </Button>
           </DialogFooter>
         </form>
