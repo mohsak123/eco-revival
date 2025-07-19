@@ -132,7 +132,7 @@ export const registerCompany = createAsyncThunk<
   { rejectValue: string }
 >('auth/registerCompany', async (data, thunkAPI) => {
   try {
-    const response = await axios.post(`${BASE_URL}/factory/signup`, data);
+    const response = await axios.post(`${BASE_URL}/houdix/eco/auth/factory/signup`, data);
     return response.data;
   } catch (err: any) {
     return thunkAPI.rejectWithValue(err.response?.data?.message || 'Register company failed');
@@ -239,12 +239,8 @@ const authSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(registerCompany.fulfilled, (state, action) => {
+      .addCase(registerCompany.fulfilled, (state) => {
         state.loading = false;
-        state.user = action.payload.factory;
-        state.token = action.payload.token;
-        localStorage.setItem('token', action.payload.token);
-        localStorage.setItem('user', JSON.stringify(action.payload.factory));
       })
       .addCase(registerCompany.rejected, (state, action) => {
         state.loading = false;

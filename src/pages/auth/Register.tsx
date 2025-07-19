@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/card";
 
 import { useDispatch } from "react-redux";
-import { registerCompany, registerUser } from "@/store/authSlice";
+import { registerCompany, registerUser, setRole } from "@/store/authSlice";
 import type { AppDispatch } from "@/store/store";
 import { useTranslation } from 'react-i18next';
 
@@ -119,17 +119,15 @@ const Register = () => {
       lng: position.lng,
     };
 
-    toast.success("Form is valid. Ready to submit.");
-    console.log("Final Data", finalData);
-
     if (activeTab === "user") {
       const resultAction = await dispatch(
         registerUser(finalData)
       );
 
       if (registerUser.fulfilled.match(resultAction)) {
+        dispatch(setRole("user"));
         toast.success("Welcome back, Company!");
-        navigate("/dashboard");
+        navigate("/");
       } else {
         // الخطأ في reject
         const errMsg = (resultAction.payload as string) || "Register failed";
@@ -142,8 +140,9 @@ const Register = () => {
       );
 
       if (registerCompany.fulfilled.match(resultAction)) {
-        toast.success("Welcome back!");
-        navigate("/dashboard");
+        dispatch(setRole("admin"));
+        toast.success("Factory account created. Awaiting admin approval.");
+        navigate("/login");
       } else {
         const errMsg = (resultAction.payload as string) || "Register failed";
         setApiError(errMsg);
