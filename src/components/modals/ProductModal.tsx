@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,10 +8,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
-import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { getMaterials } from "@/store/factory/materialsSlice";
 import { addPricing } from "@/store/factory/pricingSlice";
+import Select from "react-select";
 
 interface Material {
   id: number;
@@ -26,7 +26,7 @@ interface Material {
 interface ProductModalProps {
   open: boolean;
   onOpenChange: (value: boolean) => void;
-  onAdd?: (product: any) => void; // تقدر تلغي هذا لو مش ضروري
+  onAdd?: (product: any) => void;
   materials: Material[];
 }
 
@@ -34,7 +34,7 @@ const ProductModal = ({ open, onOpenChange }: ProductModalProps) => {
   const { t, i18n } = useTranslation();
   const dispatch = useAppDispatch();
 
-  const { materials, loading } = useAppSelector((state) => state.materials);
+  const { materials } = useAppSelector((state) => state.materials);
 
   useEffect(() => {
     if (open) {
@@ -45,27 +45,18 @@ const ProductModal = ({ open, onOpenChange }: ProductModalProps) => {
   const [selectedMaterialId, setSelectedMaterialId] = useState<number | "">("");
   const [price, setPrice] = useState("");
   const [unit, setUnit] = useState("kg");
-  const [image, setImage] = useState<File | null>(null);
-
   const [errors, setErrors] = useState({
     materialId: "",
     price: "",
-    image: "",
   });
 
   const validate = () => {
     const newErrors = {
       materialId: selectedMaterialId === "" ? t("Product name is required.") : "",
       price: price === "" || parseFloat(price) <= 0 ? t("Price must be greater than 0.") : "",
-      // image: !image
-      //   ? t("Product image is required.")
-      //   : !image.type.startsWith("image/")
-      //   ? t("Only image files are allowed.")
-      //   : "",
     };
     setErrors(newErrors);
-    return !newErrors.materialId && !newErrors.price 
-    // && !newErrors.image;
+    return !newErrors.materialId && !newErrors.price;
   };
 
   const handleSubmit = async () => {
@@ -80,18 +71,25 @@ const ProductModal = ({ open, onOpenChange }: ProductModalProps) => {
         })
       ).unwrap();
 
-      // بعد الإضافة نرجع للحالات الافتراضية ونقفل المودال
       setSelectedMaterialId("");
       setPrice("");
       setUnit("kg");
-      setImage(null);
-      setErrors({ materialId: "", price: "", image: "" });
+      setErrors({ materialId: "", price: "" });
       onOpenChange(false);
     } catch (error) {
-      // هنا ممكن تعرض خطأ للـ user
       console.error("Failed to add pricing", error);
     }
   };
+
+  const materialOptions = materials.map((mat) => ({
+    value: mat.id,
+    label: (
+      <div className="flex items-center gap-2">
+        <img src={mat.image} alt="" className="w-6 h-6 rounded-full" />
+        <span>{i18n.language === "en" && mat.name_en ? mat.name_en : mat.name}</span>
+      </div>
+    ),
+  }));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -106,21 +104,24 @@ const ProductModal = ({ open, onOpenChange }: ProductModalProps) => {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               {t("Product Name")}
             </label>
-            <select
-              value={selectedMaterialId}
-              onChange={(e) => setSelectedMaterialId(Number(e.target.value))}
-              className={`w-full border ${
-                errors.materialId ? "border-red-500" : "border-gray-300"
-              } rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#4ade80]`}
-            >
-              <option value="">{t("Select a product")}</option>
-              {materials?.map((mat) => (
-                <option key={mat.id} value={mat.id}>
-                  {i18n.language === "en" && mat.name_en ? mat.name_en : mat.name}
-                </option>
-              ))}
-            </select>
-            {errors.materialId && <p className="text-sm text-red-500 mt-1">{errors.materialId}</p>}
+            <Select
+              options={materialOptions}
+              value={materialOptions.find((opt) => opt.value === selectedMaterialId) || null}
+              onChange={(option) => setSelectedMaterialId(option?.value || "")}
+              classNamePrefix="react-select"
+              styles={{
+                control: (base) => ({
+                  ...base,
+                  borderColor: errors.materialId ? "#f87171" : "#d1d5db",
+                  boxShadow: "none",
+                  borderRadius: "0.5rem",
+                  padding: "2px",
+                }),
+              }}
+            />
+            {errors.materialId && (
+              <p className="text-sm text-red-500 mt-1">{errors.materialId}</p>
+            )}
           </div>
 
           <div>
@@ -138,20 +139,6 @@ const ProductModal = ({ open, onOpenChange }: ProductModalProps) => {
             />
             {errors.price && <p className="text-sm text-red-500 mt-1">{errors.price}</p>}
           </div>
-
-          {/* <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t("Product Image")}
-            </label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setImage(e.target.files?.[0] || null)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#4ade80]"
-            />
-            {image && <p className="text-sm text-gray-600 mt-1">{t("Selected")}: {image.name}</p>}
-            {errors.image && <p className="text-sm text-red-500 mt-1">{errors.image}</p>}
-          </div> */}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -171,14 +158,14 @@ const ProductModal = ({ open, onOpenChange }: ProductModalProps) => {
             <Button
               type="button"
               onClick={handleSubmit}
-              className="flex-1 bg-[#4ade80] hover:bg-[#16a34a] text-white cursor-pointer"
+              className="flex-1 bg-[#4ade80] hover:bg-[#16a34a] text-white"
             >
               {t("Add")}
             </Button>
             <Button
               type="button"
               variant="secondary"
-              className="flex-1 bg-gray-500 hover:bg-gray-600 text-white cursor-pointer"
+              className="flex-1 bg-gray-500 hover:bg-gray-600 text-white"
               onClick={() => onOpenChange(false)}
             >
               {t("Cancel")}
