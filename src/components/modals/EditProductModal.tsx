@@ -7,16 +7,18 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useAppSelector, useAppDispatch } from "@/store/hooks";
+import { getMaterials } from "@/store/factory/materialsSlice";
+import Select from "react-select";
 
 interface EditProductModalProps {
   open: boolean;
   onOpenChange: (value: boolean) => void;
   product: {
     id: string;
-    name: string;
+    material_id: number;
     price: string;
     unit: string;
-    image?: File | null;
   } | null;
   onSave: (updatedProduct: any) => void;
 }
@@ -27,34 +29,44 @@ const EditProductModal = ({
   product,
   onSave,
 }: EditProductModalProps) => {
-  const [name, setName] = useState("");
+  const dispatch = useAppDispatch();
+  const { materials } = useAppSelector((state) => state.materials);
+
+  // المواد المستخدمة
+  const usedMaterialIds = useAppSelector((state) =>
+    state.pricing.pricings.map((p) => p.material_id)
+  );
+
+  const [selectedMaterialId, setSelectedMaterialId] = useState<number | "">("");
   const [price, setPrice] = useState("");
   const [unit, setUnit] = useState("kg");
-  const [image, setImage] = useState<File | null>(null);
 
   const [errors, setErrors] = useState({
-    name: "",
+    materialId: "",
     price: "",
-    image: "",
   });
 
   useEffect(() => {
+    if (open) {
+      dispatch(getMaterials());
+    }
+  }, [open, dispatch]);
+
+  useEffect(() => {
     if (product) {
-      setName(product.name || "");
-      setPrice(product.price.replace(/[^\d.]/g, "") || "");
+      setSelectedMaterialId(product.material_id || "");
+      setPrice(product.price || "");
       setUnit(product.unit || "kg");
-      setImage(product.image || null);
     }
   }, [product]);
 
   const validate = () => {
     const newErrors = {
-      name: name.trim() === "" ? "Product name is required." : "",
+      materialId: selectedMaterialId === "" ? "Product name is required." : "",
       price: price === "" || parseFloat(price) <= 0 ? "Price must be greater than 0." : "",
-      image: image && !image.type.startsWith("image/") ? "Only image files are allowed." : "",
     };
     setErrors(newErrors);
-    return !newErrors.name && !newErrors.price && !newErrors.image;
+    return !newErrors.materialId && !newErrors.price;
   };
 
   const handleSubmit = () => {
@@ -62,15 +74,30 @@ const EditProductModal = ({
 
     const updatedProduct = {
       ...product,
-      name,
+      material_id: selectedMaterialId,
       price,
       unit,
-      image,
     };
 
     onSave(updatedProduct);
     onOpenChange(false);
   };
+
+  // فلترة المواد المستخدمة مع السماح باستخدام المادة الحالية للمنتج الجاري تعديله
+  const filteredMaterials = materials.filter(
+    (mat) =>
+      !usedMaterialIds.includes(mat.id) || mat.id === product?.material_id
+  );
+
+  const materialOptions = filteredMaterials.map((mat) => ({
+    value: mat.id,
+    label: (
+      <div className="flex items-center gap-2">
+        <img src={mat.image} alt="" className="w-6 h-6 rounded-full" />
+        <span>{mat.name}</span>
+      </div>
+    ),
+  }));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -85,15 +112,24 @@ const EditProductModal = ({
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Product Name
             </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className={`w-full border ${
-                errors.name ? "border-red-500" : "border-gray-300"
-              } rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#4ade80]`}
+            <Select
+              options={materialOptions}
+              value={materialOptions.find((opt) => opt.value === selectedMaterialId) || null}
+              onChange={(option) => setSelectedMaterialId(option?.value || "")}
+              classNamePrefix="react-select"
+              styles={{
+                control: (base) => ({
+                  ...base,
+                  borderColor: errors.materialId ? "#f87171" : "#d1d5db",
+                  boxShadow: "none",
+                  borderRadius: "0.5rem",
+                  padding: "2px",
+                }),
+              }}
             />
-            {errors.name && <p className="text-sm text-red-500 mt-1">{errors.name}</p>}
+            {errors.materialId && (
+              <p className="text-sm text-red-500 mt-1">{errors.materialId}</p>
+            )}
           </div>
 
           <div>
@@ -110,20 +146,6 @@ const EditProductModal = ({
               } rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#4ade80]`}
             />
             {errors.price && <p className="text-sm text-red-500 mt-1">{errors.price}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Product Image
-            </label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setImage(e.target.files?.[0] || null)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#4ade80]"
-            />
-            {image && <p className="text-sm text-gray-600 mt-1">Selected: {image.name}</p>}
-            {errors.image && <p className="text-sm text-red-500 mt-1">{errors.image}</p>}
           </div>
 
           <div>

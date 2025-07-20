@@ -30,6 +30,8 @@ const Products = () => {
     unit: p.unit,
   }));
 
+  console.log(pricings)
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -43,29 +45,27 @@ const Products = () => {
   };
 
   const handleSaveEditedProduct = async (updatedProduct: Product) => {
-    try {
-      if (!updatedProduct.id) return;
+  try {
+    if (!updatedProduct.id) return;
 
-      // ابني بيانات الإرسال حسب المطلوب
-      const dataToSend = {
-        material_id: pricings.find(p => p.id.toString() === updatedProduct.id)?.material_id || 0,
-        price: parseFloat(updatedProduct.price),
-        unit: updatedProduct.unit,
-      };
+    const dataToSend = {
+      material_id: updatedProduct.material_id, // ✅ التعديل المهم
+      price: parseFloat(updatedProduct.price),
+      unit: updatedProduct.unit,
+    };
 
-      await dispatch(editPricing({ id: Number(updatedProduct.id), data: dataToSend })).unwrap();
+    await dispatch(editPricing({ id: Number(updatedProduct.id), data: dataToSend })).unwrap();
 
-      toast.success("Pricing updated successfully");
-      setIsEditModalOpen(false);
-      setSelectedProduct(null);
+    toast.success("Pricing updated successfully");
+    setIsEditModalOpen(false);
+    setSelectedProduct(null);
+    dispatch(getPricings());
+  } catch (error: any) {
+    console.error("Failed to edit pricing:", error);
+    toast.error(error || "Failed to edit pricing");
+  }
+};
 
-      // حدث القائمة
-      dispatch(getPricings());
-    } catch (error: any) {
-      console.error("Failed to edit pricing:", error);
-      toast.error(error || "Failed to edit pricing");
-    }
-  };
 
   const handleDeleteConfirmed = async() => {
     if (productToDelete) {

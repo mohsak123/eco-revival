@@ -27,7 +27,6 @@ interface ProductModalProps {
   open: boolean;
   onOpenChange: (value: boolean) => void;
   onAdd?: (product: any) => void;
-  materials: Material[];
 }
 
 const ProductModal = ({ open, onOpenChange }: ProductModalProps) => {
@@ -35,6 +34,11 @@ const ProductModal = ({ open, onOpenChange }: ProductModalProps) => {
   const dispatch = useAppDispatch();
 
   const { materials } = useAppSelector((state) => state.materials);
+
+  // الحصول على المواد المستخدمة من pricings
+  const usedMaterialIds = useAppSelector((state) =>
+    state.pricing.pricings.map((p) => p.material_id)
+  );
 
   useEffect(() => {
     if (open) {
@@ -81,7 +85,12 @@ const ProductModal = ({ open, onOpenChange }: ProductModalProps) => {
     }
   };
 
-  const materialOptions = materials.map((mat) => ({
+  // فلترة المواد المستخدمة
+  const filteredMaterials = materials.filter(
+    (mat) => !usedMaterialIds.includes(mat.id)
+  );
+
+  const materialOptions = filteredMaterials.map((mat) => ({
     value: mat.id,
     label: (
       <div className="flex items-center gap-2">
