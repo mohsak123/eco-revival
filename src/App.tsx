@@ -107,8 +107,8 @@ const App = () => {
               <Route path="/factories" element={<Factories />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/help" element={<Help />} />
-              <Route path="/factories/factory" element={<SingleFactory />} />
-              <Route path="/factories/factory/order" element={<PlaceOrder />} />
+              <Route path="/factories/:id" element={<SingleFactory />} />
+              <Route path="/factories/:id/order" element={<PlaceOrder />} />
             </Route>
 
             <Route

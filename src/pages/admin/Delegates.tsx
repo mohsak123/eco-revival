@@ -5,7 +5,7 @@ import DeleteConfirmDialog from "@/components/modals/DeleteConfirmDialog";
 import { useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store/store";
 import { useDispatch } from "react-redux";
-import { deleteDelegate, getDelegates } from "@/store/factory/factorySlice";
+import { deleteDelegate, getDelegates } from "@/store/factory/delegateSlice";
 import toast from "react-hot-toast";
 
 const Delegates = () => {

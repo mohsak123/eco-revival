@@ -4,7 +4,7 @@ import { useState } from "react";
 import DynamicMap from "@/components/DynamicMap";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "@/store/store";
-import { createDelegate } from "@/store/factory/factorySlice";
+import { createDelegate } from "@/store/factory/delegateSlice";
 import toast from "react-hot-toast";  // استيراد التوست
 
 const DelegateModal = ({

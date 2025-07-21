@@ -1,43 +1,39 @@
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { FaBuilding } from "react-icons/fa";
 import { Link } from "react-router-dom";
-
-interface Factory {
-  name: string;
-  materials: string;
-  rating: number;
-  ratingText: string;
-}
-
-const factories: Factory[] = [
-  {
-    name: "GreenTech Recycling",
-    materials: "Paper, Cardboard, Plastic bottles",
-    rating: 4.8,
-    ratingText: "⭐⭐⭐⭐⭐",
-  },
-  {
-    name: "EcoMetal Solutions",
-    materials: "Aluminum cans, Metal scraps",
-    rating: 4.6,
-    ratingText: "⭐⭐⭐⭐⭐",
-  },
-  {
-    name: "PlasticCycle Pro",
-    materials: "All plastic types, Bottles, Containers",
-    rating: 4.9,
-    ratingText: "⭐⭐⭐⭐⭐",
-  },
-];
+import { getFactories } from "@/store/user/factorySlice";
+import type { AppDispatch, RootState } from "@/store/store";
+import loader from "../../public/animations/loader.json";
+import Lottie from "lottie-react";
 
 const Factories = () => {
+  const dispatch = useDispatch<AppDispatch>();
+
+  const { factory, loading, error } = useSelector((state: RootState) => state.factory);
+
+  useEffect(() => {
+    dispatch(getFactories());
+  }, [dispatch]);
+
+  if (loading) {
+    return <div className="h-[68vh] sm:h-[75vh] flex items-center justify-center">
+      <Lottie animationData={loader} loop={true} className="w-[275px] sm:w-[350px]" />
+    </div>
+  }
+
   return (
     <div id="factoriesContent" className="fade-in">
       <h2 className="text-2xl font-bold text-eco-gray mb-6">All Factories</h2>
 
+      {loading && <p>Loading...</p>}
+      {error && <p className="text-red-500">{error}</p>}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {factories.map((factory, index) => (
-          <Link to="/factories/factory"
-            key={index}
+        {factory.map((f) => (
+          <Link
+            to={`/factories/${f.id}`}
+            key={f.id}
             className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition duration-200 cursor-pointer"
           >
             <div className="h-48 bg-gradient-to-br from-[#86efac] to-[#4ade80] flex items-center justify-center">
@@ -45,12 +41,14 @@ const Factories = () => {
             </div>
             <div className="p-6">
               <h3 className="text-xl font-semibold text-eco-gray mb-2">
-                {factory.name}
+                {f.name}
               </h3>
-              <p className="text-eco-gray mb-4">{factory.materials}</p>
+              <p className="text-eco-gray mb-4">
+                {f.Pricings.map(p => p.Material.name).join(", ")}
+              </p>
               <div className="flex items-center justify-between">
-                <span className="text-yellow-500">{factory.ratingText}</span>
-                <span className="text-eco-gray text-sm">{factory.rating}/5</span>
+                <span className="text-yellow-500">⭐⭐⭐⭐⭐</span>
+                <span className="text-eco-gray text-sm">5/5</span>
               </div>
             </div>
           </Link>

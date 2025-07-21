@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch } from "@/store/hooks"; 
-import { editDelegate } from "@/store/factory/factorySlice";
+import { editDelegate } from "@/store/factory/delegateSlice";
 import DynamicMap from "@/components/DynamicMap";
 import toast from "react-hot-toast"; // استيراد التوست
 

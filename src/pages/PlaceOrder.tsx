@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from "react";
 import DynamicMap from "@/components/DynamicMap";
+import { useParams } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
+import type { AppDispatch, RootState } from "@/store/store";
+import { getFactories } from "@/store/user/factorySlice";
 
 const materialsData = [
   { id: "Paper", label: "ورق", price: 2.5 },
@@ -32,6 +37,26 @@ const PlaceOrder = () => {
 
   // حالة تعديل الموقع
   const [isEditingLocation, setIsEditingLocation] = useState(false);
+
+  const { id } = useParams();
+const dispatch = useDispatch<AppDispatch>();
+const { factory, loading } = useSelector((state: RootState) => state.factory);
+
+  useEffect(() => {
+    if (factory.length === 0) dispatch(getFactories());
+  }, [dispatch, factory.length]);
+
+  const selectedFactory = factory.find((f) => f.id === Number(id));
+
+  // تأكد من الانتظار ريثما تصل البيانات
+  if (loading || !selectedFactory) return <p className="text-gray-500">Loading...</p>;
+
+  // جلب المواد من المصنع
+  const materialsData = selectedFactory.Pricings.map((p) => ({
+    id: p.Material.name,
+    label: p.Material.name,
+    price: p.price,
+  }));
 
   useEffect(() => {
     let total = 0;
