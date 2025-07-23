@@ -1,251 +1,311 @@
 import React, { useEffect, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { useForm, useWatch } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { type OrderResponse } from "@/store/user/orderSlice";
+import DynamicMap from "@/components/DynamicMap";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import DynamicMap from "@/components/DynamicMap"; // تأكد أنك مستدعيه من المسار الصحيح
 
-type Material = {
-  id: string;
-  label: string;
-  price: number;
-};
+const schema = z.object({
+  materials: z.record(z.string(), z.boolean()),
+  quantities: z.record(z.string(), z.number().min(0.1, "Quantity must be greater than 0").optional()),
+  location: z.string().min(1, "Location from map is required"),
+  address: z.string().min(1, "Detailed address is required"),
+  date: z.string().min(1, "Date is required"),
+  time: z.string().min(1, "Time is required"),
+  comments: z.string().optional(),
+}).refine(
+  (data) => Object.entries(data.materials).every(([materialId, checked]) => {
+    if (checked) {
+      const qty = data.quantities[materialId];
+      return typeof qty === "number" && qty >= 0.1;
+    }
+    return true;
+  }),
+  {
+    message: "Please enter a valid quantity for each selected material",
+    path: ["quantities"],
+  }
+);
 
-const materialsData: Material[] = [
-  { id: "Paper", label: "Paper", price: 2.5 },
-  { id: "Cardboard", label: "Cardboard", price: 3 },
-  { id: "Plastic Bottles", label: "Plastic Bottles", price: 4 },
-];
-
-type Order = {
-  id: number;
-  materials: string;
-  quantity: string;
-  date: string;
-  price: string;
-  location?: string;
-  time?: string;
-};
+type FormSchema = z.infer<typeof schema>;
 
 type EditOrderDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  initialOrder: Order | null;
-  onSave: (updatedOrder: Order) => void;
+  initialOrder: OrderResponse | null;
+  onSave: (updatedData: any) => Promise<void>;
 };
 
-const EditOrderDialog: React.FC<EditOrderDialogProps> = ({
-  open,
-  onOpenChange,
-  initialOrder,
-  onSave,
-}) => {
-  const [selectedMaterials, setSelectedMaterials] = useState<{ [key: string]: boolean }>({});
-  const [quantities, setQuantities] = useState<{ [key: string]: number }>({});
-  const [address, setAddress] = useState("");
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
+const EditOrderDialog: React.FC<EditOrderDialogProps> = ({ open, onOpenChange, initialOrder, onSave }) => {
+  const {
+    register,
+    handleSubmit,
+    control,
+    setValue,
+    reset,
+    formState: { errors },
+  } = useForm<FormSchema>({
+    resolver: zodResolver(schema),
+  });
+
+  const [coordinates, setCoordinates] = useState({ lat: 0, lng: 0 });
   const [estimatedPrice, setEstimatedPrice] = useState(0);
-  const [position, setPosition] = useState({ lat: 35.52, lng: 35.8 });
-  const [isEditable, setIsEditable] = useState(false);
+  const [isEditingLocation, setIsEditingLocation] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const availableMaterials = React.useMemo(() => initialOrder?.Factory.Pricings || [], [initialOrder]);
+
+  // استخدم useWatch بدلاً من watch
+  const watchedMaterials = useWatch({ control, name: "materials" });
+  const watchedQuantities = useWatch({ control, name: "quantities" });
+  const watchedLocation = useWatch({ control, name: "location" });
 
   useEffect(() => {
     if (initialOrder) {
-      const selected: { [key: string]: boolean } = {};
-      const qty: { [key: string]: number } = {};
-      const materials = initialOrder.materials.split(",").map((m) => m.trim());
-      const quantityValues = initialOrder.quantity.split(",").map((q) => parseFloat(q.trim()));
+      const materialsCheckboxes: Record<string, boolean> = {};
+      const quantitiesValues: Record<string, number> = {};
 
-      materials.forEach((mat, idx) => {
-        selected[mat] = true;
-        qty[mat] = quantityValues[idx] || 1;
+      availableMaterials.forEach(p => {
+        materialsCheckboxes[p.material_id.toString()] = false;
       });
 
-      setSelectedMaterials(selected);
-      setQuantities(qty);
-      setAddress(initialOrder.location || "");
-      setDate(initialOrder.date || "");
-      setTime(initialOrder.time || "");
-    }
-  }, [initialOrder]);
+      initialOrder.Order_Materials.forEach(item => {
+        materialsCheckboxes[item.material_id.toString()] = true;
+        quantitiesValues[item.material_id.toString()] = item.quantity;
+      });
 
+      const dateObj = new Date(initialOrder.required_date);
+      const timeStr = dateObj.toTimeString().split(" ")[0].substring(0, 5);
+      const dateStr = dateObj.toISOString().split("T")[0];
+
+      reset({
+        materials: materialsCheckboxes,
+        quantities: quantitiesValues,
+        location: initialOrder.location,
+        address: initialOrder.address,
+        date: dateStr,
+        time: timeStr,
+        comments: initialOrder.comments || "",
+      });
+
+      setCoordinates({
+        lat: parseFloat(initialOrder.lat),
+        lng: parseFloat(initialOrder.lng),
+      });
+
+      setIsEditingLocation(false);
+    }
+  }, [initialOrder, reset, availableMaterials]);
+
+  // حدث السعر كل مرة تتغير المواد أو الكميات
   useEffect(() => {
+    if (!availableMaterials.length || !watchedMaterials || !watchedQuantities) {
+      setEstimatedPrice(0);
+      return;
+    }
     let total = 0;
-    for (const mat of materialsData) {
-      if (selectedMaterials[mat.id]) {
-        total += (quantities[mat.id] || 0) * mat.price;
+    for (const [materialId, checked] of Object.entries(watchedMaterials)) {
+      if (checked) {
+        const pricingInfo = availableMaterials.find(p => p.material_id.toString() === materialId);
+        if (pricingInfo) {
+          const quantity = watchedQuantities?.[materialId] || 0;
+          total += quantity * pricingInfo.price;
+        }
       }
     }
     setEstimatedPrice(total);
-  }, [selectedMaterials, quantities]);
+  }, [watchedMaterials, watchedQuantities, availableMaterials]);
 
-  const toggleMaterial = (id: string) => {
-    setSelectedMaterials((prev) => ({
-      ...prev,
-      [id]: !prev[id],
-    }));
-    if (selectedMaterials[id]) {
-      setQuantities((prev) => ({ ...prev, [id]: 0 }));
+  const onSubmit = async (data: FormSchema) => {
+    if (!initialOrder) return;
+
+    setIsSubmitting(true);
+
+    const { date, time, address, location, materials, quantities, comments } = data;
+
+    const materialsPayload = Object.entries(materials)
+      .filter(([, checked]) => checked)
+      .map(([materialId]) => ({
+        material_id: Number(materialId),
+        quantity: quantities[materialId] || 0,
+      }));
+
+    const updatedData = {
+      required_date: `${date} ${time}:00`,
+      comments: comments || "",
+      lng: coordinates.lng,
+      lat: coordinates.lat,
+      location,
+      address,
+      materials: materialsPayload,
+      factory_id: initialOrder.factory_id,
+    };
+
+    try {
+      await onSave(updatedData);
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Update error:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleQuantityChange = (id: string, value: number) => {
-    setQuantities((prev) => ({
-      ...prev,
-      [id]: value,
-    }));
+  const handleAddressChangeFromMap = (newAddress: string) => {
+    setValue("location", newAddress, { shouldValidate: true, shouldDirty: true });
   };
 
-  const handleSave = () => {
-    if (!initialOrder) return;
-
-    const selectedMatLabels = Object.keys(selectedMaterials).filter((id) => selectedMaterials[id]);
-    const qtyArray = selectedMatLabels.map((id) => `${quantities[id] || 0} kg`);
-    const price = `$${estimatedPrice.toFixed(2)}`;
-
-    const updatedOrder: Order = {
-      ...initialOrder,
-      materials: selectedMatLabels.join(", "),
-      quantity: qtyArray.join(", "),
-      price,
-      location: address,
-      date,
-      time,
-    };
-
-    onSave(updatedOrder);
-    onOpenChange(false);
-  };
+  if (!initialOrder) {
+    return null;
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg h-[85vh] overflow-auto">
-        <DialogHeader>
-          <DialogTitle>Edit Order #{initialOrder?.id}</DialogTitle>
+      <DialogContent className="max-w-2xl h-[90vh] overflow-auto p-0">
+        <DialogHeader className="p-6 pb-0">
+          <DialogTitle className="text-2xl font-bold text-[#6b7280]">Edit Order #{initialOrder.id}</DialogTitle>
         </DialogHeader>
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSave();
-          }}
-          className="space-y-4"
-        >
-          {/* المواد */}
-          <div>
-            <label className="block font-medium mb-1">Materials</label>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 p-6">
+          <section>
+            <label className="block text-[#6b7280] font-medium mb-2">Materials</label>
             <div className="space-y-2">
-              {materialsData.map((material) => (
-                <div key={material.id} className="border p-3 rounded-lg">
-                  <label className="flex items-center space-x-2">
+              {availableMaterials.map((p) => (
+                <div key={p.material_id} className="border border-gray-200 rounded-lg p-4">
+                  <label className="flex items-center space-x-2 cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={!!selectedMaterials[material.id]}
-                      onChange={() => toggleMaterial(material.id)}
+                      id={`material_${p.material_id}`}
+                      {...register(`materials.${p.material_id}`)}
+                      className="cursor-pointer h-4 w-4 rounded border-gray-300 text-green-500 focus:ring-green-500"
                     />
-                    <span>
-                      {material.label} - ${material.price}/kg
+                    <span className="text-[#6b7280] font-medium">
+                      {p.Material.name} - {p.price} L.S/{p.unit}
                     </span>
                   </label>
-
-                  {selectedMaterials[material.id] && (
-                    <div className="mt-2">
-                      <label className="block text-sm">Quantity (kg)</label>
+                  {watchedMaterials?.[p.material_id.toString()] && (
+                    <div className="mt-3">
                       <input
                         type="number"
-                        min={1}
-                        value={quantities[material.id] || ""}
-                        onChange={(e) =>
-                          handleQuantityChange(material.id, Number(e.target.value))
-                        }
-                        className="w-full border px-3 py-2 rounded mt-1"
-                        required
+                        min={0.1}
+                        step="any"
+                        {...register(`quantities.${p.material_id}`, { valueAsNumber: true })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-400 focus:border-transparent"
+                        placeholder="Enter Quantity"
                       />
+                      {errors.quantities?.[p.material_id] && (
+                        <p className="text-red-500 text-sm mt-1">{errors.quantities[p.material_id]?.message}</p>
+                      )}
                     </div>
                   )}
                 </div>
               ))}
+              {errors.quantities && <p className="text-red-500 text-sm mt-1">{errors.quantities.message}</p>}
             </div>
-          </div>
+          </section>
 
-          {/* الموقع */}
-          <div>
-            <div className="flex justify-between items-center mb-1">
-              <label className="block font-medium">Location on Map</label>
-              <button
-                type="button"
-                onClick={() => setIsEditable((prev) => !prev)}
-                className={`text-sm font-medium px-3 py-1 rounded bg-[#4ade80] hover:bg-[#16a34a] cursor-pointer text-white`}
-              >
-                {isEditable ? "Confirm" : "Edit"}
-              </button>
+          <section>
+            <label className="block text-[#6b7280] font-medium mb-2">Pickup Location</label>
+            <div className="h-64 w-full rounded-lg overflow-hidden mb-3">
+              {coordinates.lat !== 0 && (
+                <DynamicMap
+                  initialPosition={coordinates}
+                  address={watchedLocation}
+                  onPositionChange={setCoordinates}
+                  onAddressChange={handleAddressChangeFromMap}
+                  isEditable={isEditingLocation}
+                />
+              )}
             </div>
-
-            {/* العنوان */}
             <input
               type="text"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              className="w-full border px-3 py-2 rounded mb-3"
-              disabled={!isEditable}
+              {...register("location")}
+              readOnly
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-100"
+              placeholder="Location from map"
             />
+            {errors.location && <p className="text-red-500 text-sm mt-1">{errors.location.message}</p>}
 
-            {/* الخريطة */}
-            <DynamicMap
-              address={address}
-              initialPosition={position}
-              onPositionChange={(pos) => {
-                if (isEditable) setPosition(pos);
-              }}
-              onAddressChange={(addr) => {
-                if (isEditable) setAddress(addr);
-              }}
-              isEditable={isEditable}
-            />
-          </div>
+            {!isEditingLocation ? (
+              <button
+                type="button"
+                onClick={() => setIsEditingLocation(true)}
+                className="mt-3 bg-[#86efac] hover:bg-[#4ade80] text-white px-4 py-2 rounded"
+              >
+                Edit Location
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsEditingLocation(false)}
+                className="mt-3 bg-[#4ade80] hover:bg-[#86efac] text-white px-4 py-2 rounded"
+              >
+                Confirm Location
+              </button>
+            )}
+          </section>
 
-          {/* التاريخ */}
-          <div>
-            <label className="block font-medium mb-1">Pickup Date</label>
+          <section>
+            <label className="block text-[#6b7280] font-medium mb-2">Detailed Address</label>
             <input
-              type="date"
-              value={date}
-              min={new Date().toISOString().split("T")[0]}
-              onChange={(e) => setDate(e.target.value)}
-              required
-              className="w-full border px-3 py-2 rounded"
+              type="text"
+              {...register("address")}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-400 focus:border-transparent"
+              placeholder="Building, Floor..."
             />
+            {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address.message}</p>}
+          </section>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <section>
+              <label className="block text-[#6b7280] font-medium mb-2">Pickup Date</label>
+              <input
+                type="date"
+                {...register("date")}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+              />
+              {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>}
+            </section>
+            <section>
+              <label className="block text-[#6b7280] font-medium mb-2">Pickup Time</label>
+              <input
+                type="time"
+                {...register("time")}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+              />
+              {errors.time && <p className="text-red-500 text-sm mt-1">{errors.time.message}</p>}
+            </section>
           </div>
 
-          {/* الوقت */}
-          <div>
-            <label className="block font-medium mb-1">Pickup Time</label>
-            <select
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-              required
-              className="w-full border px-3 py-2 rounded"
-            >
-              <option value="">Select time</option>
-              <option value="09:00">9:00 AM</option>
-              <option value="11:00">11:00 AM</option>
-              <option value="14:00">2:00 PM</option>
-              <option value="16:00">4:00 PM</option>
-            </select>
-          </div>
+          <section className="bg-[#86efac33] bg-opacity-20 p-4 rounded-lg">
+            <p className="text-[#6b7280] font-medium">
+              Estimated Total Price:{" "}
+              <span className="text-green-600 font-bold">${estimatedPrice.toFixed(2)}</span>
+            </p>
+          </section>
 
-          {/* السعر */}
-          <div className="bg-green-100 text-green-700 p-3 rounded text-sm">
-            Estimated Total Price: <strong>${estimatedPrice.toFixed(2)}</strong>
-          </div>
+          <section>
+            <label className="block text-[#6b7280] font-medium mb-2">Comments (Optional)</label>
+            <textarea
+              {...register("comments")}
+              rows={3}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+              placeholder="Any additional notes..."
+            />
+          </section>
 
-          {/* زر الحفظ */}
-          <div className="text-right pt-2">
-            <Button type="submit" className="bg-[#4ade80] hover:bg-[#16a34a] cursor-pointer">Save Changes</Button>
-          </div>
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full hover:bg-[#4ade80] bg-[#86efac] cursor-pointer text-white font-semibold py-3 rounded-lg transition duration-200 flex items-center justify-center"
+          >
+            {isSubmitting ? (
+              <span className="animate-spin mr-2 h-5 w-5 border-2 border-white border-t-transparent rounded-full"></span>
+            ) : null}
+            {isSubmitting ? "Saving..." : "Save Changes"}
+          </Button>
         </form>
       </DialogContent>
     </Dialog>

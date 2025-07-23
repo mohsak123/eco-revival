@@ -30,8 +30,6 @@ const Products = () => {
     unit: p.unit,
   }));
 
-  console.log(pricings)
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -49,7 +47,7 @@ const Products = () => {
     if (!updatedProduct.id) return;
 
     const dataToSend = {
-      material_id: updatedProduct.material_id, // ✅ التعديل المهم
+      material_id: updatedProduct.material_id,
       price: parseFloat(updatedProduct.price),
       unit: updatedProduct.unit,
     };

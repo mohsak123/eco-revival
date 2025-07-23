@@ -1,330 +1,354 @@
-import React, { useState, useEffect } from "react";
-import DynamicMap from "@/components/DynamicMap";
-import { useParams } from "react-router-dom";
-import { useDispatch } from "react-redux";
-import { useSelector } from "react-redux";
-import type { AppDispatch, RootState } from "@/store/store";
+import { useEffect, useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate, useParams } from "react-router-dom";
+
 import { getFactories } from "@/store/user/factorySlice";
+import { addOrder, resetOrderState } from "@/store/user/orderSlice";
+import type { AppDispatch, RootState } from "@/store/store";
 
-const materialsData = [
-  { id: "Paper", label: "ورق", price: 2.5 },
-  { id: "Cardboard", label: "كرتون", price: 3 },
-  { id: "Plastic Bottles", label: "عبوات بلاستيكية", price: 4 },
-];
+import DynamicMap from "@/components/DynamicMap";
+import toast from "react-hot-toast";
 
-const PlaceOrder = () => {
-  // حالات الحقول
-  const [selectedMaterials, setSelectedMaterials] = useState<{ [key: string]: boolean }>({});
-  const [quantities, setQuantities] = useState<{ [key: string]: number }>({});
-  const [locationText, setLocationText] = useState("Latakia, Syria");
-  const [store1Pos, setStore1Pos] = useState({ lat: 35.52, lng: 35.8 });
-  const [address, setAddress] = useState("");
-  const [pickupDate, setPickupDate] = useState("");
-  const [pickupTime, setPickupTime] = useState("");
+const schema = z
+  .object({
+    materials: z.record(z.string(), z.boolean()),
+    quantities: z.record(z.string(), z.number().min(1).optional()),
+    location: z.string().min(1, "Current Location is required"),
+    address: z.string().min(1, "Address is required"),
+    date: z.string().min(1, "Date is required"),
+    time: z.string().min(1, "Time is required"),
+    comments: z.string().optional(),
+  })
+  .refine(
+    (data) =>
+      Object.entries(data.materials).every(([material, checked]) => {
+        if (checked) {
+          const qty = data.quantities[material];
+          return typeof qty === "number" && qty >= 1;
+        }
+        return true;
+      }),
+    {
+      message: "Please enter quantity for each selected material",
+      path: ["quantities"],
+    }
+  );
 
-  // حالة السعر المحسوب
-  const [estimatedPrice, setEstimatedPrice] = useState(0);
+type FormSchema = z.infer<typeof schema>;
 
-  // حالة الأخطاء
-  const [errors, setErrors] = useState({
-    materials: "",
-    quantities: "",
-    locationText: "",
-    address: "",
-    pickupDate: "",
-    pickupTime: "",
+export default function PlaceOrder() {
+  const { id } = useParams<{ id: string }>();
+  const dispatch = useDispatch<AppDispatch>();
+  const [coordinates, setCoordinates] = useState({ lat: 0, lng: 0 });
+
+  const { factory, loading } = useSelector((state: RootState) => state.factory);
+  const [selectedFactory, setSelectedFactory] = useState<typeof factory[0] | null>(null);
+  const { loadingOrder, success, error } = useSelector((state: RootState) => state.order);
+
+  const navigate = useNavigate();
+
+  if (error) {
+    toast.error(error);
+  }
+
+  const {
+    register,
+    control,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors },
+  } = useForm<FormSchema>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      materials: {},
+      quantities: {},
+      location: "",
+      address: "",
+      date: "",
+      time: "",
+      comments: "",
+    },
   });
 
-  // حالة تعديل الموقع
-  const [isEditingLocation, setIsEditingLocation] = useState(false);
+  const selectedMaterials = useWatch({ control, name: "materials" });
+  const selectedQuantities = useWatch({ control, name: "quantities" });
+  const watchedLocation = watch("location");
 
-  const { id } = useParams();
-const dispatch = useDispatch<AppDispatch>();
-const { factory, loading } = useSelector((state: RootState) => state.factory);
+  const [estimatedPrice, setEstimatedPrice] = useState(0);
+  const [isEditingLocation, setIsEditingLocation] = useState(false);
 
   useEffect(() => {
     if (factory.length === 0) dispatch(getFactories());
   }, [dispatch, factory.length]);
 
-  const selectedFactory = factory.find((f) => f.id === Number(id));
-
-  // تأكد من الانتظار ريثما تصل البيانات
-  if (loading || !selectedFactory) return <p className="text-gray-500">Loading...</p>;
-
-  // جلب المواد من المصنع
-  const materialsData = selectedFactory.Pricings.map((p) => ({
-    id: p.Material.name,
-    label: p.Material.name,
-    price: p.price,
-  }));
+  useEffect(() => {
+    if (!loading && factory.length > 0) {
+      const found = factory.find((f) => f.id === Number(id));
+      setSelectedFactory(found || null);
+    }
+  }, [factory, id, loading]);
 
   useEffect(() => {
+    if (!selectedFactory) {
+      setEstimatedPrice(0);
+      return;
+    }
     let total = 0;
-    for (const material of materialsData) {
-      if (selectedMaterials[material.id]) {
-        total += (quantities[material.id] || 0) * material.price;
-      }
-    }
-    setEstimatedPrice(total);
-  }, [selectedMaterials, quantities]);
 
-  const toggleMaterial = (id: string) => {
-    setSelectedMaterials((prev) => ({
-      ...prev,
-      [id]: !prev[id],
-    }));
-    if (selectedMaterials[id]) {
-      setQuantities((prev) => ({ ...prev, [id]: 0 }));
-    }
-  };
-
-  const handleQuantityChange = (id: string, value: number) => {
-    setQuantities((prev) => ({
-      ...prev,
-      [id]: value,
-    }));
-  };
-
-  // دالة التحقق
-  const validate = () => {
-    const newErrors = {
-      materials: "",
-      quantities: "",
-      locationText: "",
-      address: "",
-      pickupDate: "",
-      pickupTime: "",
-    };
-
-    if (!Object.values(selectedMaterials).some(Boolean)) {
-      newErrors.materials = "Please select at least one material.";
-    }
-
-    for (const id of Object.keys(selectedMaterials)) {
-      if (selectedMaterials[id]) {
-        if (!quantities[id] || quantities[id] <= 0) {
-          newErrors.quantities = "Please enter valid quantity for all selected materials.";
-          break;
+    for (const [materialName, checked] of Object.entries(selectedMaterials || {})) {
+      if (checked) {
+        const qty = selectedQuantities?.[materialName] || 0;
+        const pricing = selectedFactory.Pricings.find(
+          (p) => p.Material.name.toLowerCase() === materialName.toLowerCase()
+        );
+        if (pricing) {
+          total += qty * pricing.price;
         }
       }
     }
 
-    if (locationText.trim() === "") {
-      newErrors.locationText = "Please enter a valid location.";
+    setEstimatedPrice(total);
+  }, [selectedMaterials, selectedQuantities, selectedFactory]);
+
+  const handleAddressChangeFromMap = (newAddress: string) => {
+    if (isEditingLocation) {
+      setValue("location", newAddress, { shouldValidate: true, shouldDirty: true });
     }
-
-    if (address.trim() === "") {
-      newErrors.address = "Please enter your full address.";
-    } else if (address.length > 256) {
-      newErrors.address = "Address must not exceed 256 characters.";
-    }
-
-    if (pickupDate === "") {
-      newErrors.pickupDate = "Please select a pickup date.";
-    }
-
-    if (pickupTime === "") {
-      newErrors.pickupTime = "Please select a pickup time.";
-    }
-
-    setErrors(newErrors);
-
-    return Object.values(newErrors).every((err) => err === "");
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
+  const initialPosition = selectedFactory
+    ? { lat: Number(selectedFactory.lat), lng: Number(selectedFactory.lng) }
+    : { lat: 31.963158, lng: 35.930359 };
 
-    alert("Order confirmed! Total price: $" + estimatedPrice.toFixed(2));
-    console.log("Coordinates:", store1Pos);
-    console.log("Address:", address);
+
+
+  useEffect(() => {
+    if (success) {
+      reset();
+      dispatch(resetOrderState());
+      navigate("/orders");
+    }
+  }, [success, reset, dispatch, navigate]);
+
+
+  const onSubmit = (data: FormSchema) => {
+    if (!selectedFactory) return;
+
+    const { date, time, address, location, materials, quantities, comments } = data;
+
+    const materialArray = Object.entries(materials)
+      .filter(([_, checked]) => checked)
+      .map(([materialName]) => {
+        const qty = quantities[materialName];
+        const matched = selectedFactory.Pricings.find(
+          (p) => p.Material.name.toLowerCase() === materialName.toLowerCase()
+        );
+        return matched && qty
+          ? {
+              material_id: matched.Material.id,
+              quantity: qty,
+            }
+          : null;
+      })
+      .filter(Boolean) as { material_id: number; quantity: number }[];
+
+    const orderPayload = {
+      required_date: `${date} ${time}`,
+      comments: comments || "",
+      lng: coordinates.lng,
+      lat: coordinates.lat,
+      location,
+      address,
+      factory_id: selectedFactory.id,
+      materials: materialArray,
+    };
+
+    console.log(orderPayload)
+
+    dispatch(addOrder(orderPayload));
   };
 
-  // عند الضغط على زر Edit لتعديل الموقع
-  const handleEditLocation = () => {
-    setIsEditingLocation(true);
-  };
+  const materialsList = selectedFactory
+    ? selectedFactory.Pricings.map((p) => ({
+        id: p.Material.name,
+        label: p.Material.name,
+        price: p.price,
+      }))
+    : [];
 
-  // عند الضغط على زر Confirm بعد التعديل
-  const handleConfirmLocation = () => {
-    // ممكن تضيف تحقق هنا اذا بدك قبل تأكيد التغييرات على الموقع
-    setIsEditingLocation(false);
-  };
+  if (loading || !selectedFactory) return <p className="text-gray-500">Loading...</p>;
 
   return (
-    <div id="orderForm" className="fade-in">
+    <div className="fade-in mx-auto">
       <button
-        onClick={() => window.history.back()}
-        className="mb-4 text-[#4ade80] cursor-pointer hover:underline"
+        onClick={() => history.back()}
+        className="mb-4 text-[#4ade80] hover:underline font-semibold"
       >
         ← Back to Factory
       </button>
 
       <h2 className="text-2xl font-bold text-[#6b7280] mb-6">Place Your Order</h2>
 
-      <div className="bg-white rounded-xl shadow-md p-6">
-        <form id="orderFormData" className="space-y-6" onSubmit={handleSubmit}>
-          {/* المواد */}
-          <div>
-            <label className="block text-[#6b7280] font-medium mb-2">Select Materials to Sell</label>
-            {errors.materials && <p className="text-red-500 text-sm mb-2">{errors.materials}</p>}
-            <div className="space-y-2">
-              {materialsData.map((material) => (
-                <div key={material.id} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id={`material_${material.id}`}
-                        name={`materials[${material.id}]`}
-                        checked={!!selectedMaterials[material.id]}
-                        onChange={() => toggleMaterial(material.id)}
-                        className="material-checkbox"
-                        data-price={material.price}
-                      />
-                      <label htmlFor={`material_${material.id}`} className="text-[#6b7280] font-medium">
-                        {material.label} - ${material.price}/kg
-                      </label>
-                    </div>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 bg-white rounded-xl shadow-md p-6">
+
+        <section>
+          <label className="block text-[#6b7280] font-medium mb-2">Select Materials to Sell</label>
+          <div className="space-y-2">
+            {materialsList.map((material) => (
+              <div key={material.id} className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id={`material_${material.id}`}
+                      {...register(`materials.${material.id}`)}
+                      className="cursor-pointer"
+                    />
+                    <label htmlFor={`material_${material.id}`} className="text-[#6b7280] font-medium cursor-pointer">
+                      {material.label} - ${material.price.toFixed(2)}/kg
+                    </label>
                   </div>
-
-                  {selectedMaterials[material.id] && (
-                    <div className="mt-3">
-                      <label className="block text-sm text-[#6b7280] mb-1">Quantity (kg)</label>
-                      <input
-                        type="number"
-                        id={`qty_${material.id}`}
-                        name={`quantities[${material.id}]`}
-                        min={1}
-                        value={quantities[material.id] || ""}
-                        onChange={(e) => handleQuantityChange(material.id, Number(e.target.value))}
-                        className={`w-full px-3 py-2 border-gray-300 border-[1px] rounded-lg focus:ring-2 focus:ring-[#4ade80] focus:border-transparent ${
-                          errors.quantities ? "border-red-500" : "border-gray-300"
-                        }`}
-                        required
-                      />
-                    </div>
-                  )}
                 </div>
-              ))}
-            </div>
-          </div>
 
-          {/* الموقع */}
-          <div>
-            <label className="block text-[#6b7280] font-medium mb-2">Current Location</label>
-            {errors.locationText && <p className="text-red-500 text-sm mb-1">{errors.locationText}</p>}
-            <input
-              type="text"
-              name="location"
-              value={locationText}
-              onChange={(e) => setLocationText(e.target.value)}
-              placeholder="e.g., Latakia, Syria"
-              className="w-full px-4 py-3 border-[1px] border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4ade80] focus:border-transparent"
-              required
-              disabled={!isEditingLocation} // تعطيل الحقل لو ما عم يعدل
-            />
-            <DynamicMap
-              address={locationText}
-              initialPosition={store1Pos}
-              onPositionChange={(pos) => {
-                if (isEditingLocation) setStore1Pos(pos);
-              }}
-              onAddressChange={(newAddress) => {
-                if (isEditingLocation) setLocationText(newAddress);
-              }}
-              isEditable={isEditingLocation} // <== هنا ترسل القيمة
-            />
-
-            {/* أزرار تعديل الموقع وتأكيد التعديل */}
-            {!isEditingLocation ? (
-              <button
-                type="button"
-                onClick={handleEditLocation}
-                className="mt-3 bg-[#4ade80] hover:bg-[#16a34a] text-white px-4 py-2 rounded"
-              >
-                Edit Location
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={handleConfirmLocation}
-                className="mt-3 bg-[#22c55e] hover:bg-[#15803d] text-white px-4 py-2 rounded"
-              >
-                Confirm Location
-              </button>
+                {selectedMaterials?.[material.id] && (
+                  <div className="mt-3">
+                    <label htmlFor={`quantity_${material.id}`} className="block text-sm text-[#6b7280] mb-1">
+                      Quantity (kg)
+                    </label>
+                    <input
+                      id={`quantity_${material.id}`}
+                      type="number"
+                      min={1}
+                      {...register(`quantities.${material.id}`, { valueAsNumber: true })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-eco-green focus:border-transparent"
+                      placeholder="Enter quantity"
+                    />
+                    {errors.quantities?.[material.id] && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.quantities[material.id]?.message || "Quantity is required and must be ≥ 1"}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+            {typeof errors.materials?.message === "string" && (
+              <p className="text-red-500 text-sm mt-1">{errors.materials.message}</p>
             )}
           </div>
+        </section>
 
-          {/* العنوان */}
-          <div>
-            <label className="block text-[#6b7280] font-medium mb-2">Full Address</label>
-            {errors.address && <p className="text-red-500 text-sm mb-1">{errors.address}</p>}
-            <input
-              type="text"
-              name="address"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="Enter your full address"
-              maxLength={256}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4ade80] focus:border-transparent"
-              required
-            />
-          </div>
+        <section>
+          <label className="block text-[#6b7280] font-medium mb-2">Current Location</label>
+          <input
+            type="text"
+            {...register("location")}
+            readOnly={!isEditingLocation}
+            className={`w-full px-4 py-3 rounded-lg border ${
+              isEditingLocation
+                ? "border-eco-green focus:ring-2 focus:ring-eco-green focus:border-transparent"
+                : "border-gray-300 bg-gray-100"
+            }`}
+            placeholder="Location from map"
+          />
+          {errors.location && <p className="text-red-500 text-sm mt-1">{errors.location.message}</p>}
 
-          {/* تاريخ الاستلام */}
-          <div>
-            <label className="block text-[#6b7280] font-medium mb-2">Preferred Pickup Date</label>
-            {errors.pickupDate && <p className="text-red-500 text-sm mb-1">{errors.pickupDate}</p>}
-            <input
-              type="date"
-              name="pickupDate"
-              value={pickupDate}
-              onChange={(e) => setPickupDate(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4ade80] focus:border-transparent"
-              required
-              min={new Date().toISOString().split("T")[0]}
-            />
-          </div>
-
-          {/* وقت الاستلام */}
-          <div>
-            <label className="block text-eco-gray font-medium mb-2">Preferred Pickup Time</label>
-            {errors.pickupTime && <p className="text-red-500 text-sm mb-1">{errors.pickupTime}</p>}
-            <select
-              name="pickupTime"
-              value={pickupTime}
-              onChange={(e) => setPickupTime(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4ade80] focus:border-transparent"
-              required
+          {!isEditingLocation ? (
+            <button
+              type="button"
+              onClick={() => setIsEditingLocation(true)}
+              className="mt-3 bg-[#86efac] hover:bg-[#4ade80] text-white px-4 py-2 rounded"
             >
-              <option value="">Select time</option>
-              <option value="09:00">9:00 AM</option>
-              <option value="11:00">11:00 AM</option>
-              <option value="14:00">2:00 PM</option>
-              <option value="16:00">4:00 PM</option>
-            </select>
-          </div>
+              Edit Location
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsEditingLocation(false)}
+              className="mt-3 bg-[#4ade80] hover:bg-[#86efac] text-white px-4 py-2 rounded"
+            >
+              Confirm Location
+            </button>
+          )}
+        </section>
 
-          {/* السعر المقدر */}
-          <div className="bg-[#e7fcee] bg-opacity-20 p-4 rounded-lg">
-            <p className="text-[#6b7280] font-medium">
-              Estimated Total Price:{" "}
-              <span className="text-[#4ade80] font-bold">${estimatedPrice.toFixed(2)}</span>
-            </p>
-          </div>
+        <DynamicMap
+          initialPosition={initialPosition}
+          address={watchedLocation}
+          onPositionChange={(pos) => setCoordinates(pos)}
+          onAddressChange={handleAddressChangeFromMap}
+          isEditable={isEditingLocation}
+        />
 
-          <button
-            type="submit"
-            className="w-full bg-[#86efac] hover:bg-[#4ade80] cursor-pointer text-white font-semibold py-3 rounded-lg transition duration-200"
+        <section>
+          <label className="block text-[#6b7280] font-medium mb-2">Address</label>
+          <input
+            type="text"
+            {...register("address")}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-eco-green focus:border-transparent"
+            placeholder="Your address here"
+          />
+          {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address.message}</p>}
+        </section>
+
+        <section>
+          <label className="block text-[#6b7280] font-medium mb-2">Preferred Pickup Date</label>
+          <input
+            type="date"
+            {...register("date")}
+            min={new Date().toISOString().split("T")[0]}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-eco-green focus:border-transparent"
+          />
+          {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>}
+        </section>
+
+        <section>
+          <label className="block text-[#6b7280] font-medium mb-2">Preferred Pickup Time</label>
+          <select
+            {...register("time")}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-eco-green focus:border-transparent"
+            defaultValue=""
           >
-            Confirm Order
-          </button>
-        </form>
-      </div>
+            <option value="" disabled>
+              Select time
+            </option>
+            <option value="09:00">9:00 AM</option>
+            <option value="11:00">11:00 AM</option>
+            <option value="14:00">2:00 PM</option>
+            <option value="16:00">4:00 PM</option>
+          </select>
+          {errors.time && <p className="text-red-500 text-sm mt-1">{errors.time.message}</p>}
+        </section>
+
+        <section className="bg-[#86efac33] bg-opacity-20 p-4 rounded-lg">
+          <p className="text-[#6b7280] font-medium">
+            Estimated Total Price:{" "}
+            <span className="text-[#4ade80] font-bold">${estimatedPrice.toFixed(2)}</span>
+          </p>
+        </section>
+
+        <section>
+          <label className="block text-[#6b7280] font-medium mb-2">Comments (Optional)</label>
+          <textarea
+            {...register("comments")}
+            rows={3}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#86efac33] focus:border-transparent"
+            placeholder="Any additional notes or comments"
+          />
+        </section>
+
+        <button
+          type="submit"
+          className="w-full hover:bg-[#4ade80] bg-[#86efac] cursor-pointer text-white font-semibold py-3 rounded-lg transition duration-200"
+        >
+          Confirm Order
+        </button>
+      </form>
     </div>
   );
-};
-
-export default PlaceOrder;
+}

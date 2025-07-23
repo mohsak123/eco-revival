@@ -1,14 +1,14 @@
-import { useTranslation } from 'react-i18next';
+// import { useTranslation } from 'react-i18next';
 
 const Home = () => {
-  const { t, i18n } = useTranslation();
+  // const { t, i18n } = useTranslation();
   return (
     <div id="mainOverviewContent" className="fade-in">
 
-      <h1>{t('welcome')}</h1>
+      {/* <h1>{t('welcome')}</h1> */}
 
-      <button onClick={() => i18n.changeLanguage('en')}>English</button>
-      <button onClick={() => i18n.changeLanguage('ar')}>العربية</button>
+      {/* <button onClick={() => i18n.changeLanguage('en')}>English</button>
+      <button onClick={() => i18n.changeLanguage('ar')}>العربية</button> */}
       <h2 className="text-2xl font-bold text-[#6b7280] mb-6">Main Overview</h2>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">

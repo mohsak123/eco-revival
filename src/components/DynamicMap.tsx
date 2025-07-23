@@ -67,8 +67,7 @@ const DynamicMap = ({
   // البحث عن الموقع من العنوان مع debounce
   useEffect(() => {
     // تجنب البحث إذا كان التحديث من داخل المكون أو العنوان فارغ
-    if (!address.trim() || address === lastAddressRef.current || isInternalUpdateRef.current) {
-      isInternalUpdateRef.current = false;
+    if (!address || !address.trim() || address === lastAddressRef.current || isInternalUpdateRef.current) {      isInternalUpdateRef.current = false;
       return;
     }
 

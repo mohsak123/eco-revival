@@ -47,6 +47,7 @@ interface FactoryState {
   factory: Factory[];
   loading: boolean;
   error: string | null;
+  status: "idle" | "loading" | "succeeded" | "failed";
 }
 
 
@@ -54,6 +55,7 @@ const initialState:FactoryState = {
   factory: [],
   loading: false,
   error: null,
+  status: "idle", // ✅ الحالة الأولية
 }
 
 export const getFactories = createAsyncThunk<Factory[], void, { rejectValue: string }>(
@@ -75,7 +77,7 @@ export const getFactories = createAsyncThunk<Factory[], void, { rejectValue: str
 
 
 const factorySlice = createSlice({
-  name: 'factory', // عدلت الاسم من "auth" إلى "factory" لأنه الأدق
+  name: 'factory',
   initialState,
   reducers: {},
   extraReducers: (builder) => {
@@ -83,14 +85,17 @@ const factorySlice = createSlice({
       .addCase(getFactories.pending, (state) => {
         state.loading = true;
         state.error = null;
+        state.status = "loading";
       })
       .addCase(getFactories.fulfilled, (state, action) => {
         state.loading = false;
         state.factory = action.payload;
+        state.status = "succeeded";
       })
       .addCase(getFactories.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload ?? 'Unknown error';
+        state.status = "failed";
       });
   }
 });

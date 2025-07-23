@@ -10,10 +10,12 @@ import Lottie from "lottie-react";
 const Factories = () => {
   const dispatch = useDispatch<AppDispatch>();
 
-  const { factory, loading, error } = useSelector((state: RootState) => state.factory);
+  const { factory, loading, error, status } = useSelector((state: RootState) => state.factory);
 
   useEffect(() => {
-    dispatch(getFactories());
+    if (status === "idle") {
+      dispatch(getFactories());
+    }
   }, [dispatch]);
 
   if (loading) {

@@ -5,6 +5,7 @@ import delegateSlice from './factory/delegateSlice';
 import materialsSlice from './factory/materialsSlice';
 import pricingSlice from './factory/pricingSlice';
 import factorySlice from './user/factorySlice';
+import orderSlice from './user/orderSlice';
 
 export const store = configureStore({
   reducer: {
@@ -13,6 +14,7 @@ export const store = configureStore({
     materials: materialsSlice,
     pricing: pricingSlice,
     factory: factorySlice,
+    order:orderSlice
   },
 });
 
